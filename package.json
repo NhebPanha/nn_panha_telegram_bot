@@ -1,0 +1,32 @@
+{
+  "name": "nn_bot",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^4.4.8",
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0",
+    "@prisma/client": "^5.12.1",
+    "@vueuse/core": "^10.9.0",
+    "@vueuse/nuxt": "^10.9.0",
+    "pinia": "^2.1.7",
+    "@pinia/nuxt": "^0.5.1",
+    "node-cron": "^3.0.3",
+    "lucide-vue-next": "^0.368.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.11.4",
+    "prisma": "^5.12.1",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.5",
+    "@types/node": "^20.12.7"
+  }
+}
