@@ -37,10 +37,10 @@ export default defineEventHandler(async (event) => {
     let chatId = group.chatId
     if (body.chatId) {
       chatId = body.chatId.trim()
-      if (!chatId.startsWith('-')) {
+      if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
         throw createError({
           statusCode: 400,
-          statusMessage: 'Invalid Chat ID. Telegram group IDs start with a minus sign (-)'
+          statusMessage: 'Invalid Chat ID. Telegram group IDs start with a minus sign (-) or public usernames start with (@)'
         })
       }
 

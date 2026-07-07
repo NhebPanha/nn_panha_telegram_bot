@@ -3,21 +3,21 @@
     "id": 1,
     "title": "Morning Message",
     "time": "08:00",
-    "message": "Good morning everyone 🌞",
+    "message": "ដល់ម៉ោងចូលធ្វើការងារហើយ បងៗ ប្អូនៗ ទាំងឡាយ🌞",
     "active": true
   },
   {
     "id": 2,
     "title": "Lunch Reminder",
     "time": "12:00",
-    "message": "Good afternoon ☀️",
+    "message": "ដល់ម៉ោងបរិភោបអាហាហើយ បងៗ ប្អូនៗ ទាំងឡាយ ☀️",
     "active": true
   },
   {
     "id": 3,
     "title": "Evening Message",
     "time": "17:00",
-    "message": "Good evening 🌙",
+    "message": "ដល់ម៉ោងទៅផ្ទះហើយ បងៗ ប្អូនៗ ទាំងឡាយ 🌙",
     "active": true
   }
 ]
