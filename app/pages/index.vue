@@ -47,7 +47,7 @@ const tabs = [
             <LogViewer />
           </div>
           <div class="lg:col-span-4 space-y-6">
-            <BotSettings />
+            <BotSettings sidebar />
           </div>
         </div>
       </div>

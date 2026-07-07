@@ -5,6 +5,10 @@ import { useGroupsStore } from '../stores/groups'
 import { useToast } from '../composables/useToast'
 import { Key, Send, RefreshCw, Eye, EyeOff, ShieldCheck } from 'lucide-vue-next'
 
+defineProps<{
+  sidebar?: boolean
+}>()
+
 const botStore = useBotStore()
 const groupsStore = useGroupsStore()
 const toast = useToast()
@@ -70,9 +74,9 @@ const handleSendTest = async () => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div :class="sidebar ? 'flex flex-col gap-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6'">
     <!-- Left: Configure Bot Token -->
-    <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between">
+    <div :class="sidebar ? 'w-full' : 'lg:col-span-7'" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between">
       <div>
         <div class="flex items-center gap-3 mb-6">
           <div class="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl text-purple-400">
@@ -133,7 +137,7 @@ const handleSendTest = async () => {
     </div>
 
     <!-- Right: Connection Status & Test Dispatcher -->
-    <div class="lg:col-span-5 flex flex-col gap-6">
+    <div :class="sidebar ? 'w-full' : 'lg:col-span-5'" class="flex flex-col gap-6">
       <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Connection Details</h3>
         

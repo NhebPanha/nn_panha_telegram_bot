@@ -52,7 +52,7 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
     <!-- Stat Card: Total Groups -->
     <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 group">
       <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
@@ -118,7 +118,7 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
     </div>
 
     <!-- Stat Card: Next Scheduled Message -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 lg:col-span-1 md:col-span-2 group">
+    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 xl:col-span-1 lg:col-span-1 sm:col-span-2 group">
       <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
         <Clock class="w-24 h-24" />
       </div>
