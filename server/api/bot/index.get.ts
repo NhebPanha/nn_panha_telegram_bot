@@ -1,9 +1,9 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const bot = await prisma.telegramBot.findFirst()
-    if (!bot) {
+    const bot = await db.getBot()
+    if (!bot || !bot.token) {
       return {
         exists: false,
         bot: null
@@ -13,10 +13,10 @@ export default defineEventHandler(async (event) => {
     return {
       exists: true,
       bot: {
-        id: bot.id,
-        username: bot.username,
-        isActive: bot.isActive,
-        createdAt: bot.createdAt
+        id: '1',
+        username: bot.username || null,
+        isActive: bot.active,
+        createdAt: new Date().toISOString()
       }
     }
   } catch (error: any) {

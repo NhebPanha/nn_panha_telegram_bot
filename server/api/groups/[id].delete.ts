@@ -1,29 +1,30 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
-    if (!id) {
+    const idStr = getRouterParam(event, 'id')
+    if (!idStr) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Group ID is required'
       })
     }
 
-    const group = await prisma.telegramGroup.findUnique({
-      where: { id }
-    })
+    const id = Number(idStr)
+    if (isNaN(id)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid Group ID format'
+      })
+    }
 
-    if (!group) {
+    const success = await db.deleteGroup(id)
+    if (!success) {
       throw createError({
         statusCode: 404,
         statusMessage: 'Group not found'
       })
     }
-
-    await prisma.telegramGroup.delete({
-      where: { id }
-    })
 
     return {
       success: true,

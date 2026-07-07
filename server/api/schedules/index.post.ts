@@ -1,4 +1,4 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -23,18 +23,23 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const schedule = await prisma.schedule.create({
-      data: {
-        title,
-        message,
-        time,
-        isActive: body.isActive !== undefined ? body.isActive : true
-      }
-    })
+    const schedule = await db.createSchedule(
+      title,
+      message,
+      time,
+      body.isActive !== undefined ? body.isActive : true
+    )
 
     return {
       success: true,
-      schedule
+      schedule: {
+        id: String(schedule.id),
+        title: schedule.title,
+        message: schedule.message,
+        time: schedule.time,
+        isActive: schedule.active,
+        createdAt: new Date().toISOString()
+      }
     }
   } catch (error: any) {
     throw createError({

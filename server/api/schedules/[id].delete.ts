@@ -1,29 +1,30 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
-    if (!id) {
+    const idStr = getRouterParam(event, 'id')
+    if (!idStr) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Schedule ID is required'
       })
     }
 
-    const schedule = await prisma.schedule.findUnique({
-      where: { id }
-    })
+    const id = Number(idStr)
+    if (isNaN(id)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid Schedule ID format'
+      })
+    }
 
-    if (!schedule) {
+    const success = await db.deleteSchedule(id)
+    if (!success) {
       throw createError({
         statusCode: 404,
         statusMessage: 'Schedule not found'
       })
     }
-
-    await prisma.schedule.delete({
-      where: { id }
-    })
 
     return {
       success: true,

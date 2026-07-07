@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "title": "Morning Message",
+    "time": "08:00",
+    "message": "Good morning everyone 🌞",
+    "active": true
+  },
+  {
+    "id": 2,
+    "title": "Lunch Reminder",
+    "time": "12:00",
+    "message": "Good afternoon ☀️",
+    "active": true
+  },
+  {
+    "id": 3,
+    "title": "Evening Message",
+    "time": "17:00",
+    "message": "Good evening 🌙",
+    "active": true
+  }
+]

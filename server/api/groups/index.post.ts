@@ -1,4 +1,4 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -22,10 +22,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check if group already exists
-    const existingGroup = await prisma.telegramGroup.findUnique({
-      where: { chatId }
-    })
-
+    const existingGroup = await db.getGroupByChatId(chatId)
     if (existingGroup) {
       throw createError({
         statusCode: 409,
@@ -33,17 +30,21 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const group = await prisma.telegramGroup.create({
-      data: {
-        chatId,
-        name,
-        isActive: body.isActive !== undefined ? body.isActive : true
-      }
-    })
+    const group = await db.createGroup(
+      name,
+      chatId,
+      body.isActive !== undefined ? body.isActive : true
+    )
 
     return {
       success: true,
-      group
+      group: {
+        id: String(group.id),
+        chatId: group.chatId,
+        name: group.name,
+        isActive: group.active,
+        createdAt: new Date().toISOString()
+      }
     }
   } catch (error: any) {
     throw createError({

@@ -1,4 +1,4 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 import { encryptToken } from '../../utils/crypto'
 
 export default defineEventHandler(async (event) => {
@@ -13,32 +13,18 @@ export default defineEventHandler(async (event) => {
 
     const encryptedToken = encryptToken(body.token.trim())
 
-    const existingBot = await prisma.telegramBot.findFirst()
-    let bot
-    if (existingBot) {
-      bot = await prisma.telegramBot.update({
-        where: { id: existingBot.id },
-        data: {
-          token: encryptedToken,
-          isActive: body.isActive !== undefined ? body.isActive : true
-        }
-      })
-    } else {
-      bot = await prisma.telegramBot.create({
-        data: {
-          token: encryptedToken,
-          isActive: true
-        }
-      })
-    }
+    const bot = await db.saveBot({
+      token: encryptedToken,
+      active: body.isActive !== undefined ? body.isActive : true
+    })
 
     return {
       success: true,
       bot: {
-        id: bot.id,
-        username: bot.username,
-        isActive: bot.isActive,
-        createdAt: bot.createdAt
+        id: '1',
+        username: bot.username || null,
+        isActive: bot.active,
+        createdAt: new Date().toISOString()
       }
     }
   } catch (error: any) {

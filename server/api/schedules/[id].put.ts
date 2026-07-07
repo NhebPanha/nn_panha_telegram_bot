@@ -1,12 +1,20 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
-    if (!id) {
+    const idStr = getRouterParam(event, 'id')
+    if (!idStr) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Schedule ID is required'
+      })
+    }
+
+    const id = Number(idStr)
+    if (isNaN(id)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid Schedule ID format'
       })
     }
 
@@ -18,10 +26,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const schedule = await prisma.schedule.findUnique({
-      where: { id }
-    })
-
+    const schedule = await db.getScheduleById(id)
     if (!schedule) {
       throw createError({
         statusCode: 404,
@@ -41,19 +46,23 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const updatedSchedule = await prisma.schedule.update({
-      where: { id },
-      data: {
-        title: body.title !== undefined ? body.title.trim() : schedule.title,
-        message: body.message !== undefined ? body.message.trim() : schedule.message,
-        time,
-        isActive: body.isActive !== undefined ? body.isActive : schedule.isActive
-      }
+    const updatedSchedule = await db.updateSchedule(id, {
+      title: body.title !== undefined ? body.title.trim() : schedule.title,
+      message: body.message !== undefined ? body.message.trim() : schedule.message,
+      time,
+      active: body.isActive !== undefined ? body.isActive : schedule.active
     })
 
     return {
       success: true,
-      schedule: updatedSchedule
+      schedule: {
+        id: String(updatedSchedule.id),
+        title: updatedSchedule.title,
+        message: updatedSchedule.message,
+        time: updatedSchedule.time,
+        isActive: updatedSchedule.active,
+        createdAt: new Date().toISOString()
+      }
     }
   } catch (error: any) {
     throw createError({

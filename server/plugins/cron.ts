@@ -1,35 +1,68 @@
 import cron from 'node-cron'
-import { prisma } from '../utils/prisma'
-import { decryptToken } from '../utils/crypto'
-import { sendTelegramMessage } from '../utils/telegram'
+import { db } from '../utils/db'
+import { decryptToken, encryptToken } from '../utils/crypto'
+import { sendTelegramMessage, verifyTelegramBot } from '../utils/telegram'
+
+async function syncEnvironmentVariables() {
+  try {
+    const envToken = process.env.TELEGRAM_BOT_TOKEN
+    const envChatId = process.env.TELEGRAM_GROUP_CHAT_ID
+
+    if (envToken) {
+      const trimmedToken = envToken.trim()
+      if (trimmedToken) {
+        const bot = await db.getBot()
+        let isSame = false
+        if (bot.token) {
+          try {
+            const currentToken = decryptToken(bot.token)
+            isSame = currentToken === trimmedToken
+          } catch {}
+        }
+        if (!isSame) {
+          console.log('[Init] Syncing Telegram Bot Token from environment variable...')
+          const encrypted = encryptToken(trimmedToken)
+          let username = 'EnvBot'
+          try {
+            const info = await verifyTelegramBot(trimmedToken)
+            username = info.username || info.first_name
+          } catch (e: any) {
+            console.warn('[Init] Failed to verify Telegram Bot Token from env:', e.message)
+          }
+          await db.saveBot({
+            token: encrypted,
+            username,
+            active: true
+          })
+          console.log('[Init] Telegram Bot Token synced successfully.')
+        }
+      }
+    }
+
+    if (envChatId) {
+      const trimmedChatId = envChatId.trim()
+      if (trimmedChatId) {
+        const existing = await db.getGroupByChatId(trimmedChatId)
+        if (!existing) {
+          console.log('[Init] Adding Telegram Group from environment variable chat ID:', trimmedChatId)
+          await db.createGroup('Default Group (Env)', trimmedChatId, true)
+          console.log('[Init] Group added successfully.')
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('[Init] Error syncing environment variables:', error.message)
+  }
+}
 
 async function seedDefaultSchedules() {
   try {
-    const count = await prisma.schedule.count()
-    if (count === 0) {
+    const schedules = await db.getSchedules()
+    if (schedules.length === 0) {
       console.log('[Cron] Seeding default schedules...')
-      await prisma.schedule.createMany({
-        data: [
-          {
-            title: 'Morning Greeting',
-            time: '08:00',
-            message: 'Good morning everyone 🌞 Have a productive day.',
-            isActive: true
-          },
-          {
-            title: 'Noon Reminder',
-            time: '12:00',
-            message: "Good afternoon ☀️ Don't forget to complete your tasks.",
-            isActive: true
-          },
-          {
-            title: 'Evening Wrap-up',
-            time: '17:00',
-            message: "Good evening 🌙 Thank you for today's work.",
-            isActive: true
-          }
-        ]
-      })
+      await db.createSchedule('Morning Message', 'Good morning everyone 🌞', '08:00', true)
+      await db.createSchedule('Lunch Reminder', 'Good afternoon ☀️', '12:00', true)
+      await db.createSchedule('Evening Message', 'Good evening 🌙', '17:00', true)
       console.log('[Cron] Default schedules seeded successfully!')
     }
   } catch (error) {
@@ -40,8 +73,10 @@ async function seedDefaultSchedules() {
 export default defineNitroPlugin((nitroApp) => {
   console.log('[Nitro Plugin] Cron Scheduler initialized!')
   
-  // Seed database
-  seedDefaultSchedules()
+  // Sync environment variables and seed database
+  syncEnvironmentVariables().then(() => {
+    seedDefaultSchedules()
+  })
 
   // Schedule cron to run every minute
   cron.schedule('* * * * *', async () => {
@@ -52,12 +87,8 @@ export default defineNitroPlugin((nitroApp) => {
       const currentTime = `${hours}:${minutes}`
 
       // Query active schedules matching current local time
-      const matchingSchedules = await prisma.schedule.findMany({
-        where: {
-          time: currentTime,
-          isActive: true
-        }
-      })
+      const schedules = await db.getSchedules()
+      const matchingSchedules = schedules.filter(s => s.active && s.time === currentTime)
 
       if (matchingSchedules.length === 0) {
         return
@@ -65,13 +96,9 @@ export default defineNitroPlugin((nitroApp) => {
 
       console.log(`[Cron] Found ${matchingSchedules.length} active schedule(s) matching time ${currentTime}`)
 
-      const bot = await prisma.telegramBot.findFirst({
-        where: { isActive: true }
-      })
-
-      const activeGroups = await prisma.telegramGroup.findMany({
-        where: { isActive: true }
-      })
+      const bot = await db.getBot()
+      const groups = await db.getGroups()
+      const activeGroups = groups.filter(g => g.active)
 
       for (const schedule of matchingSchedules) {
         if (activeGroups.length === 0) {
@@ -79,18 +106,16 @@ export default defineNitroPlugin((nitroApp) => {
           continue
         }
 
-        if (!bot) {
+        if (!bot || !bot.token || !bot.active) {
           console.warn('[Cron] No active Telegram bot configured. Logging failures.')
           for (const group of activeGroups) {
-            await prisma.messageLog.create({
-              data: {
-                groupId: group.id,
-                scheduleId: schedule.id,
-                message: schedule.message,
-                status: 'FAILED',
-                error: 'No active Telegram bot configured in the system.'
-              }
-            })
+            await db.createLog(
+              group.id,
+              schedule.id,
+              schedule.message,
+              'FAILED',
+              'No active Telegram bot configured in the system.'
+            )
           }
           continue
         }
@@ -101,22 +126,20 @@ export default defineNitroPlugin((nitroApp) => {
         } catch (decryptionError: any) {
           console.error('[Cron] Decryption of bot token failed:', decryptionError)
           for (const group of activeGroups) {
-            await prisma.messageLog.create({
-              data: {
-                groupId: group.id,
-                scheduleId: schedule.id,
-                message: schedule.message,
-                status: 'FAILED',
-                error: `Token decryption failed: ${decryptionError.message}`
-              }
-            })
+            await db.createLog(
+              group.id,
+              schedule.id,
+              schedule.message,
+              'FAILED',
+              `Token decryption failed: ${decryptionError.message}`
+            )
           }
           continue
         }
 
         // Send sequentially to active groups
         for (const group of activeGroups) {
-          let status = 'SUCCESS'
+          let status = 'SUCCESS' as 'SUCCESS' | 'FAILED'
           let errorMessage: string | null = null
 
           try {
@@ -129,15 +152,7 @@ export default defineNitroPlugin((nitroApp) => {
           }
 
           // Save execution log
-          await prisma.messageLog.create({
-            data: {
-              groupId: group.id,
-              scheduleId: schedule.id,
-              message: schedule.message,
-              status,
-              error: errorMessage
-            }
-          })
+          await db.createLog(group.id, schedule.id, schedule.message, status, errorMessage)
 
           // Prevent Telegram rate limits (500ms delay)
           await new Promise((resolve) => setTimeout(resolve, 500))

@@ -1,4 +1,4 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 import { decryptToken } from '../../utils/crypto'
 import { sendTelegramMessage } from '../../utils/telegram'
 
@@ -14,18 +14,15 @@ export default defineEventHandler(async (event) => {
 
     const messageText = body.message || 'Test message from your Telegram Bot Management System! 🚀'
 
-    const bot = await prisma.telegramBot.findFirst()
-    if (!bot) {
+    const bot = await db.getBot()
+    if (!bot || !bot.token) {
       throw createError({
         statusCode: 404,
         statusMessage: 'No bot token configured. Please save a token first.'
       })
     }
 
-    const group = await prisma.telegramGroup.findUnique({
-      where: { chatId: body.chatId }
-    })
-
+    const group = await db.getGroupByChatId(body.chatId)
     if (!group) {
       throw createError({
         statusCode: 404,
@@ -35,7 +32,7 @@ export default defineEventHandler(async (event) => {
 
     const decryptedToken = decryptToken(bot.token)
     
-    let status = 'SUCCESS'
+    let status = 'SUCCESS' as 'SUCCESS' | 'FAILED'
     let errorMessage: string | null = null
 
     try {
@@ -46,17 +43,23 @@ export default defineEventHandler(async (event) => {
     }
 
     // Save message log
-    const log = await prisma.messageLog.create({
-      data: {
-        groupId: group.id,
-        message: messageText,
-        status,
-        error: errorMessage
-      },
-      include: {
-        group: true
+    const log = await db.createLog(group.id, null, messageText, status, errorMessage)
+
+    const formattedLog = {
+      id: log.id,
+      groupId: String(log.groupId),
+      scheduleId: null,
+      message: log.message,
+      status: log.status,
+      error: log.error,
+      sentAt: log.sentAt,
+      group: {
+        id: String(group.id),
+        chatId: group.chatId,
+        name: group.name,
+        isActive: group.active
       }
-    })
+    }
 
     if (status === 'FAILED') {
       throw createError({
@@ -67,7 +70,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      log
+      log: formattedLog
     }
   } catch (error: any) {
     throw createError({

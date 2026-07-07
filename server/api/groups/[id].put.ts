@@ -1,12 +1,20 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, 'id')
-    if (!id) {
+    const idStr = getRouterParam(event, 'id')
+    if (!idStr) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Group ID is required'
+      })
+    }
+
+    const id = Number(idStr)
+    if (isNaN(id)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid Group ID format'
       })
     }
 
@@ -18,10 +26,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const group = await prisma.telegramGroup.findUnique({
-      where: { id }
-    })
-
+    const group = await db.getGroupById(id)
     if (!group) {
       throw createError({
         statusCode: 404,
@@ -40,9 +45,7 @@ export default defineEventHandler(async (event) => {
       }
 
       if (chatId !== group.chatId) {
-        const duplicate = await prisma.telegramGroup.findUnique({
-          where: { chatId }
-        })
+        const duplicate = await db.getGroupByChatId(chatId)
         if (duplicate) {
           throw createError({
             statusCode: 409,
@@ -52,18 +55,21 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const updatedGroup = await prisma.telegramGroup.update({
-      where: { id },
-      data: {
-        name: body.name !== undefined ? body.name.trim() : group.name,
-        chatId,
-        isActive: body.isActive !== undefined ? body.isActive : group.isActive
-      }
+    const updatedGroup = await db.updateGroup(id, {
+      name: body.name !== undefined ? body.name.trim() : group.name,
+      chatId,
+      active: body.isActive !== undefined ? body.isActive : group.active
     })
 
     return {
       success: true,
-      group: updatedGroup
+      group: {
+        id: String(updatedGroup.id),
+        chatId: updatedGroup.chatId,
+        name: updatedGroup.name,
+        isActive: updatedGroup.active,
+        createdAt: new Date().toISOString()
+      }
     }
   } catch (error: any) {
     throw createError({

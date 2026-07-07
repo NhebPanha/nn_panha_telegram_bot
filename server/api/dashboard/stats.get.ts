@@ -1,34 +1,27 @@
-import { prisma } from '../../utils/prisma'
+import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const totalGroups = await prisma.telegramGroup.count()
-    const activeSchedulesCount = await prisma.schedule.count({
-      where: { isActive: true }
-    })
+    const groups = await db.getGroups()
+    const schedules = await db.getSchedules()
+    const logs = await db.getLogs()
+
+    const totalGroups = groups.length
+    const activeSchedules = schedules.filter(s => s.active)
+    const activeSchedulesCount = activeSchedules.length
 
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
 
-    const sentToday = await prisma.messageLog.count({
-      where: {
-        sentAt: { gte: startOfDay },
-        status: 'SUCCESS'
-      }
-    })
+    const sentToday = logs.filter(
+      l => new Date(l.sentAt) >= startOfDay && l.status === 'SUCCESS'
+    ).length
 
-    const failedToday = await prisma.messageLog.count({
-      where: {
-        sentAt: { gte: startOfDay },
-        status: 'FAILED'
-      }
-    })
+    const failedToday = logs.filter(
+      l => new Date(l.sentAt) >= startOfDay && l.status === 'FAILED'
+    ).length
 
     // Calculate next scheduled message
-    const activeSchedules = await prisma.schedule.findMany({
-      where: { isActive: true }
-    })
-
     let nextSchedule = null
     if (activeSchedules.length > 0) {
       const now = new Date()
@@ -66,7 +59,7 @@ export default defineEventHandler(async (event) => {
       schedulesWithDiff.sort((a, b) => a.diff - b.diff)
       const next = schedulesWithDiff[0]
       nextSchedule = {
-        id: next.schedule.id,
+        id: String(next.schedule.id),
         title: next.schedule.title,
         time: next.schedule.time,
         message: next.schedule.message,
