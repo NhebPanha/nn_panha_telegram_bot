@@ -1,101 +1,62 @@
 [
   {
-    "id": "b779e917-5c3f-4e5f-a8b2-b19656c51bfe",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:16:29.142Z"
-  },
-  {
-    "id": "de1f5ea8-ce3c-400c-bc8d-829174eb09ba",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:16:41.533Z"
-  },
-  {
-    "id": "c5dbe71d-248d-43ac-ab74-dd5efaf15c01",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:16:49.464Z"
-  },
-  {
-    "id": "622b6674-584a-41f3-934a-1176879000fe",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:17:13.941Z"
-  },
-  {
-    "id": "5e7f875d-1260-449f-91ef-1ec5878f7a37",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:17:16.765Z"
-  },
-  {
-    "id": "ee36d560-a33c-401f-b62b-e60c788768e5",
-    "groupId": 1,
+    "id": "50e56f05-7d61-43f9-8fb7-84a6010cae8a",
+    "botId": 1,
+    "groupId": null,
+    "chatTitle": "Test Chat ID: https://t.me/pp_panha_bot",
     "scheduleId": null,
     "message": "Hello",
     "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:18:56.896Z"
+    "error": "Telegram Send Message Failed: Bad Request: chat not found",
+    "sentAt": "2026-07-08T08:12:08.071Z",
+    "telegramResponse": null
   },
   {
-    "id": "b01d9d76-9c78-4e93-8fd5-4e3f94da3558",
-    "groupId": 1,
+    "id": "9eb5d3bf-a87a-44f3-97f1-bd56902638d3",
+    "botId": 1,
+    "groupId": null,
+    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
     "scheduleId": null,
     "message": "Hello",
     "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: bot is not a member of the channel chat",
-    "sentAt": "2026-07-07T07:19:15.966Z"
+    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
+    "sentAt": "2026-07-08T08:16:05.113Z",
+    "telegramResponse": null
   },
   {
-    "id": "13cf5644-8e00-4ca8-aad0-20b14641e8b7",
-    "groupId": 1,
+    "id": "2cad19e8-e4c7-49aa-b5ff-1c2d755469e4",
+    "botId": 2,
+    "groupId": null,
+    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
     "scheduleId": null,
     "message": "Hello",
-    "status": "SUCCESS",
-    "error": null,
-    "sentAt": "2026-07-07T07:23:59.069Z"
+    "status": "FAILED",
+    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
+    "sentAt": "2026-07-08T08:16:08.421Z",
+    "telegramResponse": null
   },
   {
-    "id": "e7401e29-b9a6-4765-977c-bb3413fcb6be",
-    "groupId": 1,
+    "id": "85aa84ce-ff7e-4917-a9c6-c93b60ac74a4",
+    "botId": 1,
+    "groupId": null,
+    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
     "scheduleId": null,
-    "message": "Hello veryone",
-    "status": "SUCCESS",
-    "error": null,
-    "sentAt": "2026-07-07T07:24:57.682Z"
+    "message": "Hello",
+    "status": "FAILED",
+    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
+    "sentAt": "2026-07-08T08:16:15.528Z",
+    "telegramResponse": null
   },
   {
-    "id": "1f2c538c-47df-4939-8805-e3620745b4b9",
-    "groupId": 1,
+    "id": "3bb917b1-62e3-4cec-b22f-e98138cd35a5",
+    "botId": 1,
+    "groupId": null,
+    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
     "scheduleId": null,
-    "message": "Hello bong bong",
-    "status": "SUCCESS",
-    "error": null,
-    "sentAt": "2026-07-07T07:27:11.205Z"
-  },
-  {
-    "id": "57fdb44a-c6cb-4543-90a8-99d5ff7d21c8",
-    "groupId": 1,
-    "scheduleId": null,
-    "message": "Hello bong bong ",
-    "status": "SUCCESS",
-    "error": null,
-    "sentAt": "2026-07-07T07:31:22.824Z"
+    "message": "Hello",
+    "status": "FAILED",
+    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
+    "sentAt": "2026-07-08T08:16:19.101Z",
+    "telegramResponse": null
   }
 ]

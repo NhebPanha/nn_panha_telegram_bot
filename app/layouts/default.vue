@@ -6,7 +6,7 @@ import { Send, Github } from 'lucide-vue-next'
 const botStore = useBotStore()
 
 onMounted(() => {
-  botStore.fetchBot()
+  botStore.fetchBots()
 })
 </script>
 
@@ -28,13 +28,16 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-4">
-          <div v-if="botStore.exists" class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+          <div v-if="botStore.activeBots.length > 0" class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span class="font-medium text-slate-300">
-              {{ botStore.username ? `@${botStore.username}` : 'Bot Active' }}
+              {{ botStore.activeBots[0].username ? `@${botStore.activeBots[0].username}` : 'Bot Active' }}
+              <span v-if="botStore.activeBots.length > 1" class="text-[10px] text-slate-500 ml-1">
+                (+{{ botStore.activeBots.length - 1 }})
+              </span>
             </span>
           </div>
 

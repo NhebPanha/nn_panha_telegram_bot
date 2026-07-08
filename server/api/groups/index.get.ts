@@ -5,12 +5,13 @@ export default defineEventHandler(async (event) => {
     const groups = await db.getGroups()
     const logs = await db.getLogs()
 
-    // Map each group to format expected by UI, sorting by ID desc to show newest first
+    // Map each group to format expected by UI, sorting by ID desc
     const sortedGroups = [...groups].sort((a, b) => b.id - a.id)
 
     return sortedGroups.map(g => {
+      // Find logs associated with this group
       const groupLogs = logs
-        .filter(l => l.groupId === g.id)
+        .filter(l => l.groupId === g.id || (l.groupId === null && l.chatTitle.includes(g.chatId)))
         .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime())
 
       return {
@@ -18,7 +19,11 @@ export default defineEventHandler(async (event) => {
         chatId: g.chatId,
         name: g.name,
         isActive: g.active,
-        createdAt: new Date().toISOString(),
+        type: g.type || 'group',
+        botId: g.botId,
+        isAdmin: g.isAdmin || false,
+        permissionsVerified: g.permissionsVerified || false,
+        createdAt: g.createdAt || new Date().toISOString(),
         lastMessageTime: groupLogs[0]?.sentAt || null
       }
     })

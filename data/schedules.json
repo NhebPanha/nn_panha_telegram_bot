@@ -18,6 +18,8 @@
     "title": "Evening Message",
     "time": "17:00",
     "message": "ដល់ម៉ោងទៅផ្ទះហើយ បងៗ ប្អូនៗ ទាំងឡាយ 🌙",
-    "active": true
+    "active": true,
+    "dayOfWeek": null,
+    "dayOfMonth": null
   }
 ]

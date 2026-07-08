@@ -2,7 +2,12 @@ import { defineStore } from 'pinia'
 
 export interface MessageLog {
   id: string
-  groupId: string
+  botId: number
+  bot: {
+    username: string
+    firstName: string
+  }
+  groupId: string | null
   group: {
     name: string
     chatId: string
@@ -12,7 +17,7 @@ export interface MessageLog {
     title: string
   } | null
   message: string
-  status: 'SUCCESS' | 'FAILED'
+  status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'RETRYING' | 'CANCELLED'
   error: string | null
   sentAt: string
 }
@@ -36,6 +41,7 @@ export const useLogsStore = defineStore('logs', {
     search: '',
     status: '',
     groupId: '',
+    botId: '',
     isLoading: false
   }),
 
@@ -48,7 +54,8 @@ export const useLogsStore = defineStore('logs', {
           limit: String(this.pagination.limit),
           search: this.search,
           status: this.status,
-          groupId: this.groupId
+          groupId: this.groupId,
+          botId: this.botId
         })
 
         const data = await $fetch<{ logs: MessageLog[]; pagination: Pagination }>(
@@ -78,10 +85,16 @@ export const useLogsStore = defineStore('logs', {
       this.fetchLogs(1)
     },
 
+    setBotId(botId: string) {
+      this.botId = botId
+      this.fetchLogs(1)
+    },
+
     resetFilters() {
       this.search = ''
       this.status = ''
       this.groupId = ''
+      this.botId = ''
       this.fetchLogs(1)
     }
   }

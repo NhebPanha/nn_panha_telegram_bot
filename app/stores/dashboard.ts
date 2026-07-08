@@ -10,8 +10,16 @@ export interface NextScheduleInfo {
 }
 
 export interface DashboardStats {
+  totalBots: number
+  activeBots: number
   totalGroups: number
+  totalChannels: number
+  overallGroupsCount: number
   activeSchedules: number
+  messagesSent: number
+  failedDeliveries: number
+  successRate: number
+  pendingQueueCount: number
   sentToday: number
   failedToday: number
   nextSchedule: NextScheduleInfo | null
@@ -20,8 +28,16 @@ export interface DashboardStats {
 export const useDashboardStore = defineStore('dashboard', {
   state: () => ({
     stats: {
+      totalBots: 0,
+      activeBots: 0,
       totalGroups: 0,
+      totalChannels: 0,
+      overallGroupsCount: 0,
       activeSchedules: 0,
+      messagesSent: 0,
+      failedDeliveries: 0,
+      successRate: 100,
+      pendingQueueCount: 0,
       sentToday: 0,
       failedToday: 0,
       nextSchedule: null

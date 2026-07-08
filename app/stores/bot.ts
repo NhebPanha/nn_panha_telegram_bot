@@ -1,58 +1,51 @@
 import { defineStore } from 'pinia'
 
-export interface BotState {
-  id: string | null
-  username: string | null
-  isActive: boolean
-  createdAt: string | null
-  exists: boolean
-  isLoading: boolean
+export interface BotInfo {
+  id: number
+  username: string
+  firstName: string
+  active: boolean
+  permissions: {
+    can_join_groups: boolean
+    can_read_all_group_messages: boolean
+    supports_inline_queries: boolean
+  }
+  status: 'ONLINE' | 'OFFLINE'
+  createdAt: string
 }
 
 export const useBotStore = defineStore('bot', {
-  state: (): BotState => ({
-    id: null,
-    username: null,
-    isActive: true,
-    createdAt: null,
-    exists: false,
+  state: () => ({
+    bots: [] as BotInfo[],
     isLoading: false
   }),
 
+  getters: {
+    activeBots: (state) => state.bots.filter(b => b.active)
+  },
+
   actions: {
-    async fetchBot() {
+    async fetchBots() {
       this.isLoading = true
       try {
-        const data = await $fetch<{ exists: boolean; bot: any }>('/api/bot')
-        this.exists = data.exists
-        if (data.bot) {
-          this.id = data.bot.id
-          this.username = data.bot.username
-          this.isActive = data.bot.isActive
-          this.createdAt = data.bot.createdAt
-        } else {
-          this.clearBot()
-        }
-      } catch (error: any) {
-        console.error('Failed to fetch bot settings:', error)
+        const data = await $fetch<BotInfo[]>('/api/bots')
+        this.bots = data
+      } catch (error) {
+        console.error('Failed to fetch bot settings list:', error)
       } finally {
         this.isLoading = false
       }
     },
 
-    async saveBotToken(token: string) {
+    async addBot(token: string) {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean; bot: any }>('/api/bot', {
+        const data = await $fetch<{ success: boolean; bot: BotInfo }>('/api/bots', {
           method: 'POST',
           body: { token }
         })
-        if (data.success && data.bot) {
-          this.exists = true
-          this.id = data.bot.id
-          this.username = data.bot.username
-          this.isActive = data.bot.isActive
-          this.createdAt = data.bot.createdAt
+        if (data.success) {
+          await this.fetchBots()
         }
         return data
       } finally {
@@ -60,16 +53,33 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async verifyBot() {
-      this.isLoading = true
+    async toggleBotStatus(id: number, active: boolean) {
       try {
-        const data = await $fetch<{ success: boolean; bot: any }>('/api/bot/verify', {
-          method: 'POST'
+        const data = await $fetch<{ success: boolean; bot: BotInfo }>(`/api/bots/${id}`, {
+          method: 'PUT',
+          body: { active }
         })
-        if (data.success && data.bot) {
-          this.exists = true
-          this.username = data.bot.username
-          this.isActive = data.bot.isActive
+        if (data.success) {
+          const index = this.bots.findIndex(b => b.id === id)
+          if (index !== -1) {
+            this.bots[index].active = data.bot.active
+          }
+        }
+        return data
+      } catch (error) {
+        console.error(`Failed to toggle status for bot ${id}:`, error)
+        throw error
+      }
+    },
+
+    async deleteBot(id: number) {
+      this.isLoading = true
+      try {
+        const data = await $fetch<{ success: boolean }>(`/api/bots/${id}`, {
+          method: 'DELETE'
+        })
+        if (data.success) {
+          this.bots = this.bots.filter(b => b.id !== id)
         }
         return data
       } finally {
@@ -77,25 +87,36 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async testMessage(chatId: string, message: string) {
+    async verifyBot(id: number) {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean; log: any }>('/api/bot/test', {
+        const data = await $fetch<{ success: boolean; status: 'ONLINE' | 'OFFLINE'; bot: BotInfo }>('/api/bots/verify', {
           method: 'POST',
-          body: { chatId, message }
+          body: { id }
         })
+        if (data.bot) {
+          const index = this.bots.findIndex(b => b.id === id)
+          if (index !== -1) {
+            this.bots[index] = data.bot
+          }
+        }
         return data
       } finally {
         this.isLoading = false
       }
     },
 
-    clearBot() {
-      this.id = null
-      this.username = null
-      this.isActive = true
-      this.createdAt = null
-      this.exists = false
+    async testMessage(botId: number, chatId: string, message: string) {
+      this.isLoading = true
+      try {
+        const data = await $fetch<{ success: boolean; log: any }>('/api/bots/test', {
+          method: 'POST',
+          body: { botId, chatId, message }
+        })
+        return data
+      } finally {
+        this.isLoading = false
+      }
     }
   }
 })

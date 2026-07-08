@@ -5,6 +5,10 @@ export interface TelegramGroup {
   chatId: string
   name: string
   isActive: boolean
+  type: 'group' | 'channel' | 'supergroup' | 'private'
+  botId: number | null
+  isAdmin: boolean
+  permissionsVerified: boolean
   createdAt: string
   lastMessageTime: string | null
 }
@@ -28,12 +32,12 @@ export const useGroupsStore = defineStore('groups', {
       }
     },
 
-    async addGroup(chatId: string, name: string) {
+    async addGroup(chatId: string, name: string, type: 'group' | 'channel' | 'supergroup' | 'private' = 'group', botId: number | null = null) {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; group: TelegramGroup }>('/api/groups', {
           method: 'POST',
-          body: { chatId, name }
+          body: { chatId, name, type, botId }
         })
         if (data.success) {
           await this.fetchGroups()
@@ -63,12 +67,12 @@ export const useGroupsStore = defineStore('groups', {
       }
     },
 
-    async updateGroup(id: string, chatId: string, name: string) {
+    async updateGroup(id: string, chatId: string, name: string, type?: 'group' | 'channel' | 'supergroup' | 'private', botId?: number | null) {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; group: TelegramGroup }>(`/api/groups/${id}`, {
           method: 'PUT',
-          body: { chatId, name }
+          body: { chatId, name, type, botId }
         })
         if (data.success) {
           await this.fetchGroups()

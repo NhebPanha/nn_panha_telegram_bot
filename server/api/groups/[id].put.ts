@@ -34,15 +34,18 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    const updates: any = {}
+
+    if (body.name !== undefined) updates.name = body.name.trim()
+    if (body.type !== undefined) updates.type = body.type
+    if (body.isActive !== undefined) updates.active = !!body.isActive
+    if (body.botId !== undefined) {
+      updates.botId = body.botId ? parseInt(body.botId, 10) : null
+    }
+
     let chatId = group.chatId
     if (body.chatId) {
       chatId = body.chatId.trim()
-      if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Invalid Chat ID. Telegram group IDs start with a minus sign (-) or public usernames start with (@)'
-        })
-      }
 
       if (chatId !== group.chatId) {
         const duplicate = await db.getGroupByChatId(chatId)
@@ -53,13 +56,10 @@ export default defineEventHandler(async (event) => {
           })
         }
       }
+      updates.chatId = chatId
     }
 
-    const updatedGroup = await db.updateGroup(id, {
-      name: body.name !== undefined ? body.name.trim() : group.name,
-      chatId,
-      active: body.isActive !== undefined ? body.isActive : group.active
-    })
+    const updatedGroup = await db.updateGroup(id, updates)
 
     return {
       success: true,
@@ -68,7 +68,11 @@ export default defineEventHandler(async (event) => {
         chatId: updatedGroup.chatId,
         name: updatedGroup.name,
         isActive: updatedGroup.active,
-        createdAt: new Date().toISOString()
+        type: updatedGroup.type || 'group',
+        botId: updatedGroup.botId,
+        isAdmin: updatedGroup.isAdmin || false,
+        permissionsVerified: updatedGroup.permissionsVerified || false,
+        createdAt: updatedGroup.createdAt || new Date().toISOString()
       }
     }
   } catch (error: any) {

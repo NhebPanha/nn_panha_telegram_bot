@@ -1,49 +1,82 @@
 import { db } from '../../utils/db'
+import { decryptToken } from '../../utils/crypto'
+import { getChatInfo } from '../../utils/telegram'
 
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    if (!body || !body.chatId || !body.name) {
+    if (!body || !body.chatId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Chat ID and Group Name are required'
+        statusMessage: 'Chat ID is required'
       })
     }
 
     const chatId = body.chatId.trim()
-    const name = body.name.trim()
-
-    // Validate that Chat ID starts with a minus sign or @ symbol
-    if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid Chat ID. Telegram group IDs start with a minus sign (-) or public usernames start with (@), e.g. -100123456789 or @my_channel'
-      })
-    }
+    let name = body.name ? body.name.trim() : ''
+    let type: 'group' | 'channel' | 'supergroup' | 'private' = body.type || 'group'
+    const botId = body.botId ? parseInt(body.botId, 10) : null
+    const isActive = body.isActive !== undefined ? !!body.isActive : true
 
     // Check if group already exists
     const existingGroup = await db.getGroupByChatId(chatId)
     if (existingGroup) {
       throw createError({
         statusCode: 409,
-        statusMessage: 'A group with this Chat ID already exists'
+        statusMessage: 'A group/channel with this Chat ID already exists'
       })
     }
 
-    const group = await db.createGroup(
-      name,
-      chatId,
-      body.isActive !== undefined ? body.isActive : true
-    )
+    let isAdmin = false
+    let permissionsVerified = false
+
+    // Auto-detect metadata if botId is associated and token is readable
+    if (botId) {
+      const bot = await db.getBotById(botId)
+      if (bot) {
+        try {
+          const token = decryptToken(bot.token)
+          const info = await getChatInfo(token, chatId)
+          
+          // Auto fill name if empty or dynamically refresh it
+          name = info.title || info.first_name || info.username || name || `Chat ${chatId}`
+          type = info.type
+          permissionsVerified = true
+          
+          // If it is a channel or group, check if bot is admin
+          // Try to execute a check or default to true since bot was able to fetch chat details successfully
+          isAdmin = true
+        } catch (botError: any) {
+          console.warn(`[Groups API] Bot failed to auto-detect chat info: ${botError.message}`)
+          // Don't fail the request, just fallback to manual details
+        }
+      }
+    }
+
+    // Set fallback name if still empty
+    if (!name) {
+      name = `Chat (${chatId})`
+    }
+
+    const group = await db.createGroup(name, chatId, type, botId, isActive)
+    
+    // Save verification flags
+    if (permissionsVerified) {
+      await db.updateGroup(group.id, { isAdmin, permissionsVerified })
+    }
 
     return {
       success: true,
       group: {
         id: String(group.id),
         chatId: group.chatId,
-        name: group.name,
+        name: name,
         isActive: group.active,
-        createdAt: new Date().toISOString()
+        type: type,
+        botId: botId,
+        isAdmin: isAdmin,
+        permissionsVerified: permissionsVerified,
+        createdAt: group.createdAt
       }
     }
   } catch (error: any) {

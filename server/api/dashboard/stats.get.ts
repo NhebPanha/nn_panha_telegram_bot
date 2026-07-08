@@ -2,13 +2,27 @@ import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
+    const bots = await db.getBots()
     const groups = await db.getGroups()
     const schedules = await db.getSchedules()
     const logs = await db.getLogs()
+    const queue = await db.getQueue()
 
-    const totalGroups = groups.length
-    const activeSchedules = schedules.filter(s => s.active)
-    const activeSchedulesCount = activeSchedules.length
+    const totalBots = bots.length
+    const activeBots = bots.filter(b => b.active).length
+
+    const totalGroups = groups.filter(g => g.type !== 'channel').length
+    const totalChannels = groups.filter(g => g.type === 'channel').length
+    const overallGroupsCount = groups.length
+
+    const activeSchedulesCount = schedules.filter(s => s.active).length
+
+    const totalLogs = logs.length
+    const messagesSent = logs.filter(l => l.status === 'SUCCESS').length
+    const failedDeliveries = logs.filter(l => l.status === 'FAILED').length
+    const successRate = totalLogs > 0 ? Math.round((messagesSent / totalLogs) * 100) : 100
+
+    const pendingQueueCount = queue.filter(q => q.status === 'PENDING' || q.status === 'RETRYING').length
 
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
@@ -22,6 +36,7 @@ export default defineEventHandler(async (event) => {
     ).length
 
     // Calculate next scheduled message
+    const activeSchedules = schedules.filter(s => s.active && s.type !== 'cron') // standard daily/weekly/monthly HH:MM
     let nextSchedule = null
     if (activeSchedules.length > 0) {
       const now = new Date()
@@ -30,6 +45,7 @@ export default defineEventHandler(async (event) => {
       const currentMinutesTotal = currentHours * 60 + currentMinutes
 
       const schedulesWithDiff = activeSchedules.map(s => {
+        // Parse time HH:MM
         const [hoursStr, minutesStr] = s.time.split(':')
         const hours = parseInt(hoursStr)
         const minutes = parseInt(minutesStr)
@@ -69,8 +85,16 @@ export default defineEventHandler(async (event) => {
     }
 
     return {
+      totalBots,
+      activeBots,
       totalGroups,
+      totalChannels,
+      overallGroupsCount,
       activeSchedules: activeSchedulesCount,
+      messagesSent,
+      failedDeliveries,
+      successRate,
+      pendingQueueCount,
       sentToday,
       failedToday,
       nextSchedule

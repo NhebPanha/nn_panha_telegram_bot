@@ -3,10 +3,19 @@ import { defineStore } from 'pinia'
 export interface Schedule {
   id: string
   title: string
+  type: 'one_time' | 'daily' | 'weekly' | 'monthly' | 'cron'
+  time: string // HH:MM or Cron
+  dayOfWeek?: number
+  dayOfMonth?: number
+  timezone: string
   message: string
-  time: string // HH:MM
+  messageType: 'text' | 'photo' | 'video' | 'document'
+  mediaUrl?: string
+  parseMode: 'HTML' | 'MarkdownV2'
+  botId: number
   isActive: boolean
   createdAt: string
+  lastExecutedAt?: string
 }
 
 export const useSchedulesStore = defineStore('schedules', {
@@ -28,12 +37,12 @@ export const useSchedulesStore = defineStore('schedules', {
       }
     },
 
-    async addSchedule(title: string, message: string, time: string) {
+    async addSchedule(payload: Omit<Schedule, 'id' | 'createdAt' | 'isActive'> & { isActive?: boolean }) {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; schedule: Schedule }>('/api/schedules', {
           method: 'POST',
-          body: { title, message, time }
+          body: payload
         })
         if (data.success) {
           await this.fetchSchedules()
@@ -63,12 +72,12 @@ export const useSchedulesStore = defineStore('schedules', {
       }
     },
 
-    async updateSchedule(id: string, title: string, message: string, time: string) {
+    async updateSchedule(id: string, payload: Partial<Omit<Schedule, 'id' | 'createdAt'>>) {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; schedule: Schedule }>(`/api/schedules/${id}`, {
           method: 'PUT',
-          body: { title, message, time }
+          body: payload
         })
         if (data.success) {
           await this.fetchSchedules()
