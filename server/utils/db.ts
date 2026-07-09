@@ -4,11 +4,11 @@ import crypto from 'crypto'
 
 // File paths
 const DATA_DIR = path.resolve(process.cwd(), 'data')
-const BOTS_PATH = path.join(DATA_DIR, 'bots.json')
+const BOT_PATH = path.join(DATA_DIR, 'bot.json')
 const GROUPS_PATH = path.join(DATA_DIR, 'groups.json')
 const SCHEDULES_PATH = path.join(DATA_DIR, 'schedules.json')
 const LOGS_PATH = path.join(DATA_DIR, 'logs.json')
-const QUEUE_PATH = path.join(DATA_DIR, 'queue.json')
+const MODERATION_PATH = path.join(DATA_DIR, 'moderation.json')
 
 // Interfaces
 export interface JSONBot {
@@ -32,7 +32,6 @@ export interface JSONGroup {
   chatId: string
   active: boolean
   type: 'group' | 'channel' | 'supergroup' | 'private'
-  botId: number | null // Associated bot (optional)
   isAdmin?: boolean
   permissionsVerified?: boolean
   createdAt: string
@@ -50,37 +49,24 @@ export interface JSONSchedule {
   messageType: 'text' | 'photo' | 'video' | 'document'
   mediaUrl?: string
   parseMode: 'HTML' | 'MarkdownV2'
-  botId: number // ID of bot that will send it
   active: boolean
   createdAt: string
   lastExecutedAt?: string
 }
 
-export interface QueueItem {
-  id: string
-  botId: number
-  chatId: string
-  message: string
-  messageType: 'text' | 'photo' | 'video' | 'document'
-  mediaUrl?: string
-  parseMode: 'HTML' | 'MarkdownV2'
-  scheduleId: number | null
-  status: 'PENDING' | 'RETRYING' | 'FAILED'
-  attempts: number
-  maxAttempts: number
-  nextAttemptAt: string // ISO date
-  createdAt: string
-  error?: string | null
+export interface ModerationSettings {
+  enabled: boolean
+  deleteLinks: boolean
+  deleteStickers: boolean
 }
 
 export interface JSONLog {
   id: string
-  botId: number
   groupId: number | null
   chatTitle: string
   scheduleId: number | null
   message: string
-  status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'RETRYING' | 'CANCELLED'
+  status: 'SUCCESS' | 'FAILED'
   error: string | null
   sentAt: string // ISO date string
   telegramResponse?: any
@@ -117,66 +103,50 @@ async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
 }
 
 export const db = {
-  // Migration support for old single bot
-  async migrateOldBotIfNeeded(): Promise<void> {
-    const oldBotPath = path.join(DATA_DIR, 'bot.json')
+  // Migrate a legacy multi-bot bots.json (array) down to a single bot.json
+  async migrateLegacyBotsIfNeeded(): Promise<void> {
+    const legacyPath = path.join(DATA_DIR, 'bots.json')
     try {
-      const oldExists = await fs.stat(oldBotPath).then(() => true).catch(() => false)
-      if (oldExists) {
-        const oldBotData = await readJsonFile<{ token: string; username: string; active: boolean }>(oldBotPath, { token: '', username: '', active: true })
-        if (oldBotData.token) {
-          // Double-check if we already have bots inside BOTS_PATH to prevent double migration
-          const bots = await readJsonFile<JSONBot[]>(BOTS_PATH, [])
-          if (bots.length === 0) {
-            console.log('[Migration] Migrating old bot.json token to bots.json...')
-            const newBot: JSONBot = {
-              id: 1,
-              token: oldBotData.token,
-              username: oldBotData.username || 'MigratedBot',
-              firstName: oldBotData.username || 'Migrated Bot',
-              active: oldBotData.active,
-              permissions: { can_join_groups: true, can_read_all_group_messages: true, supports_inline_queries: false },
-              status: 'ONLINE',
-              createdAt: new Date().toISOString()
-            }
-            await writeJsonFile(BOTS_PATH, [newBot])
-          }
+      const legacyExists = await fs.stat(legacyPath).then(() => true).catch(() => false)
+      if (!legacyExists) return
+
+      // Only migrate if a single bot.json is not already present
+      const currentExists = await fs.stat(BOT_PATH).then(() => true).catch(() => false)
+      if (!currentExists) {
+        const legacyBots = await readJsonFile<JSONBot[]>(legacyPath, [])
+        if (Array.isArray(legacyBots) && legacyBots.length > 0) {
+          console.log('[Migration] Converting legacy bots.json (multi-bot) to single bot.json...')
+          const primary = { ...legacyBots[0], id: 1 }
+          await writeJsonFile(BOT_PATH, primary)
         }
-        // Remove old bot.json
-        await fs.unlink(oldBotPath)
-        console.log('[Migration] Cleaned up old bot.json.')
       }
+
+      await fs.unlink(legacyPath)
+      console.log('[Migration] Removed legacy bots.json.')
     } catch (err) {
-      console.error('[Migration] Failed to migrate old bot:', err)
+      console.error('[Migration] Failed to migrate legacy bots.json:', err)
     }
   },
 
-  // Bot Management
-  async getBots(): Promise<JSONBot[]> {
-    await this.migrateOldBotIfNeeded()
-    return readJsonFile<JSONBot[]>(BOTS_PATH, [])
+  // Bot Management (single bot)
+  async getBot(): Promise<JSONBot | null> {
+    await this.migrateLegacyBotsIfNeeded()
+    return readJsonFile<JSONBot | null>(BOT_PATH, null)
   },
 
-  async saveBots(bots: JSONBot[]): Promise<void> {
-    await writeJsonFile(BOTS_PATH, bots)
+  async saveBot(bot: JSONBot): Promise<void> {
+    await writeJsonFile(BOT_PATH, bot)
   },
 
-  async getBotById(id: number): Promise<JSONBot | null> {
-    const bots = await this.getBots()
-    return bots.find(b => b.id === id) || null
-  },
-
-  async createBot(
+  async setBot(
     token: string,
     username: string,
     firstName: string,
     permissions = { can_join_groups: true, can_read_all_group_messages: true, supports_inline_queries: false },
     active = true
   ): Promise<JSONBot> {
-    const bots = await this.getBots()
-    const nextId = bots.length > 0 ? Math.max(...bots.map(b => b.id)) + 1 : 1
-    const newBot: JSONBot = {
-      id: nextId,
+    const bot: JSONBot = {
+      id: 1,
       token,
       username,
       firstName,
@@ -185,39 +155,26 @@ export const db = {
       status: 'ONLINE',
       createdAt: new Date().toISOString()
     }
-    bots.push(newBot)
-    await this.saveBots(bots)
-    return newBot
+    await this.saveBot(bot)
+    return bot
   },
 
-  async updateBot(id: number, updates: Partial<Omit<JSONBot, 'id' | 'createdAt'>>): Promise<JSONBot> {
-    const bots = await this.getBots()
-    const index = bots.findIndex(b => b.id === id)
-    if (index === -1) {
-      throw new Error(`Bot with ID ${id} not found`)
+  async updateBot(updates: Partial<Omit<JSONBot, 'id' | 'createdAt'>>): Promise<JSONBot> {
+    const bot = await this.getBot()
+    if (!bot) {
+      throw new Error('No bot is configured')
     }
-    const updatedBot = {
-      ...bots[index],
-      ...updates
-    }
-    bots[index] = updatedBot
-    await this.saveBots(bots)
-    return updatedBot
+    const updated = { ...bot, ...updates }
+    await this.saveBot(updated)
+    return updated
   },
 
-  async deleteBot(id: number): Promise<boolean> {
-    let bots = await this.getBots()
-    const exists = bots.some(b => b.id === id)
-    if (!exists) return false
-
-    bots = bots.filter(b => b.id !== id)
-    await this.saveBots(bots)
-
-    // Cascade delete schedules associated with this bot
-    let schedules = await this.getSchedules()
-    schedules = schedules.filter(s => s.botId !== id)
-    await this.saveSchedules(schedules)
-
+  async deleteBot(): Promise<boolean> {
+    const bot = await this.getBot()
+    if (!bot) return false
+    try {
+      await fs.unlink(BOT_PATH)
+    } catch {}
     return true
   },
 
@@ -244,7 +201,6 @@ export const db = {
     name: string,
     chatId: string,
     type: 'group' | 'channel' | 'supergroup' | 'private' = 'group',
-    botId: number | null = null,
     active = true
   ): Promise<JSONGroup> {
     const groups = await this.getGroups()
@@ -255,7 +211,6 @@ export const db = {
       chatId,
       active,
       type,
-      botId,
       createdAt: new Date().toISOString()
     }
     groups.push(newGroup)
@@ -314,7 +269,6 @@ export const db = {
     time: string,
     type: 'one_time' | 'daily' | 'weekly' | 'monthly' | 'cron' = 'daily',
     timezone = 'Asia/Phnom_Penh',
-    botId: number,
     messageType: 'text' | 'photo' | 'video' | 'document' = 'text',
     mediaUrl = '',
     parseMode: 'HTML' | 'MarkdownV2' = 'HTML',
@@ -333,7 +287,6 @@ export const db = {
       messageType,
       mediaUrl: mediaUrl || undefined,
       parseMode,
-      botId,
       active,
       dayOfWeek: options?.dayOfWeek,
       dayOfMonth: options?.dayOfMonth,
@@ -384,69 +337,20 @@ export const db = {
     return true
   },
 
-  // Queue Management
-  async getQueue(): Promise<QueueItem[]> {
-    return readJsonFile<QueueItem[]>(QUEUE_PATH, [])
+  // Moderation Settings
+  async getModerationSettings(): Promise<ModerationSettings> {
+    return readJsonFile<ModerationSettings>(MODERATION_PATH, {
+      enabled: false,
+      deleteLinks: false,
+      deleteStickers: false
+    })
   },
 
-  async saveQueue(queue: QueueItem[]): Promise<void> {
-    await writeJsonFile(QUEUE_PATH, queue)
-  },
-
-  async createQueueItem(
-    botId: number,
-    chatId: string,
-    message: string,
-    messageType: 'text' | 'photo' | 'video' | 'document' = 'text',
-    mediaUrl = '',
-    parseMode: 'HTML' | 'MarkdownV2' = 'HTML',
-    scheduleId: number | null = null,
-    maxAttempts = 3
-  ): Promise<QueueItem> {
-    const queue = await this.getQueue()
-    const newItem: QueueItem = {
-      id: crypto.randomUUID(),
-      botId,
-      chatId,
-      message,
-      messageType,
-      mediaUrl: mediaUrl || undefined,
-      parseMode,
-      scheduleId,
-      status: 'PENDING',
-      attempts: 0,
-      maxAttempts,
-      nextAttemptAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      error: null
-    }
-    queue.push(newItem)
-    await this.saveQueue(queue)
-    return newItem
-  },
-
-  async updateQueueItem(id: string, updates: Partial<QueueItem>): Promise<QueueItem> {
-    const queue = await this.getQueue()
-    const index = queue.findIndex(q => q.id === id)
-    if (index === -1) {
-      throw new Error(`Queue item with ID ${id} not found`)
-    }
-    const updated = {
-      ...queue[index],
-      ...updates
-    }
-    queue[index] = updated
-    await this.saveQueue(queue)
-    return updated
-  },
-
-  async deleteQueueItem(id: string): Promise<boolean> {
-    let queue = await this.getQueue()
-    const exists = queue.some(q => q.id === id)
-    if (!exists) return false
-    queue = queue.filter(q => q.id !== id)
-    await this.saveQueue(queue)
-    return true
+  async saveModerationSettings(updates: Partial<ModerationSettings>): Promise<ModerationSettings> {
+    const current = await this.getModerationSettings()
+    const merged: ModerationSettings = { ...current, ...updates }
+    await writeJsonFile(MODERATION_PATH, merged)
+    return merged
   },
 
   // Message Logs
@@ -459,19 +363,17 @@ export const db = {
   },
 
   async createLog(
-    botId: number,
     groupId: number | null,
     chatTitle: string,
     scheduleId: number | null,
     message: string,
-    status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'RETRYING' | 'CANCELLED',
+    status: 'SUCCESS' | 'FAILED',
     error: string | null = null,
     telegramResponse: any = null
   ): Promise<JSONLog> {
     const logs = await this.getLogs()
     const newLog: JSONLog = {
       id: crypto.randomUUID(),
-      botId,
       groupId,
       chatTitle,
       scheduleId,

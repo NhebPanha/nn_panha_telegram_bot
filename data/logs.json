@@ -1,62 +1,181 @@
 [
   {
-    "id": "50e56f05-7d61-43f9-8fb7-84a6010cae8a",
-    "botId": 1,
-    "groupId": null,
-    "chatTitle": "Test Chat ID: https://t.me/pp_panha_bot",
+    "id": "bcc916d9-f67a-472d-a82d-18394eb7f20a",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
     "scheduleId": null,
-    "message": "Hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Bad Request: chat not found",
-    "sentAt": "2026-07-08T08:12:08.071Z",
+    "message": "hello",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:11:12.437Z",
+    "telegramResponse": {
+      "message_id": 10,
+      "from": {
+        "id": 8564410304,
+        "is_bot": true,
+        "first_name": "nn.panha_bot",
+        "username": "nn_panha_bot"
+      },
+      "chat": {
+        "id": -5421159575,
+        "title": "Panha ~ bot",
+        "type": "group",
+        "all_members_are_administrators": false,
+        "accepted_gift_types": {
+          "unlimited_gifts": false,
+          "limited_gifts": false,
+          "unique_gifts": false,
+          "premium_subscription": false,
+          "gifts_from_channels": false
+        }
+      },
+      "date": 1783581079,
+      "text": "hello"
+    }
+  },
+  {
+    "id": "f9cd5211-1104-4fcd-81d2-ba396b9d3098",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
+    "scheduleId": null,
+    "message": "Hello everyone",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:11:36.132Z",
+    "telegramResponse": {
+      "message_id": 11,
+      "from": {
+        "id": 8564410304,
+        "is_bot": true,
+        "first_name": "nn.panha_bot",
+        "username": "nn_panha_bot"
+      },
+      "chat": {
+        "id": -5421159575,
+        "title": "Panha ~ bot",
+        "type": "group",
+        "all_members_are_administrators": false,
+        "accepted_gift_types": {
+          "unlimited_gifts": false,
+          "limited_gifts": false,
+          "unique_gifts": false,
+          "premium_subscription": false,
+          "gifts_from_channels": false
+        }
+      },
+      "date": 1783581103,
+      "text": "Hello everyone"
+    }
+  },
+  {
+    "id": "9cd7ee74-1ba5-4af9-a110-625dbb00452a",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
+    "scheduleId": null,
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:11:54.027Z",
     "telegramResponse": null
   },
   {
-    "id": "9eb5d3bf-a87a-44f3-97f1-bd56902638d3",
-    "botId": 1,
-    "groupId": null,
-    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
+    "id": "e6b14fb0-41bc-4c2a-a28f-0d76d0408be7",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
     "scheduleId": null,
-    "message": "Hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
-    "sentAt": "2026-07-08T08:16:05.113Z",
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:11:57.043Z",
     "telegramResponse": null
   },
   {
-    "id": "2cad19e8-e4c7-49aa-b5ff-1c2d755469e4",
-    "botId": 2,
-    "groupId": null,
-    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
+    "id": "6e28b037-366b-4a78-b261-35658d0cc5a8",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
     "scheduleId": null,
-    "message": "Hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
-    "sentAt": "2026-07-08T08:16:08.421Z",
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:12:02.173Z",
     "telegramResponse": null
   },
   {
-    "id": "85aa84ce-ff7e-4917-a9c6-c93b60ac74a4",
-    "botId": 1,
-    "groupId": null,
-    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
+    "id": "cf6a4642-f152-4359-abfb-be47208f2bf3",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
     "scheduleId": null,
-    "message": "Hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
-    "sentAt": "2026-07-08T08:16:15.528Z",
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:12:13.601Z",
     "telegramResponse": null
   },
   {
-    "id": "3bb917b1-62e3-4cec-b22f-e98138cd35a5",
-    "botId": 1,
-    "groupId": null,
-    "chatTitle": "Test Chat ID: 8564410304:AAHSjsCHbrha09fWkfkqfFX3ioWtXpSJoZg",
+    "id": "835ede87-fe70-44f0-9636-7c097fcebde0",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
     "scheduleId": null,
-    "message": "Hello",
-    "status": "FAILED",
-    "error": "Telegram Send Message Failed: Forbidden: the bot can't send messages to the bot",
-    "sentAt": "2026-07-08T08:16:19.101Z",
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:12:17.891Z",
+    "telegramResponse": null
+  },
+  {
+    "id": "f84f0e78-349a-4866-b069-b57c88649cd9",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
+    "scheduleId": null,
+    "message": "one eng chlay mes oun",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:13:16.853Z",
+    "telegramResponse": {
+      "message_id": 19,
+      "from": {
+        "id": 8564410304,
+        "is_bot": true,
+        "first_name": "nn.panha_bot",
+        "username": "nn_panha_bot"
+      },
+      "chat": {
+        "id": -5421159575,
+        "title": "Panha ~ bot",
+        "type": "group",
+        "all_members_are_administrators": false,
+        "accepted_gift_types": {
+          "unlimited_gifts": false,
+          "limited_gifts": false,
+          "unique_gifts": false,
+          "premium_subscription": false,
+          "gifts_from_channels": false
+        }
+      },
+      "date": 1783581204,
+      "text": "one eng chlay mes oun"
+    }
+  },
+  {
+    "id": "74213b62-ff03-4186-a82e-f6b95323d022",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
+    "scheduleId": null,
+    "message": "🧹 Auto-deleted sticker from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:13:37.591Z",
+    "telegramResponse": null
+  },
+  {
+    "id": "c0cd9892-9061-4a93-9247-2797dd03842c",
+    "groupId": 1,
+    "chatTitle": "Panha ~ bot",
+    "scheduleId": null,
+    "message": "🧹 Auto-deleted link from @PanhaNHEB",
+    "status": "SUCCESS",
+    "error": null,
+    "sentAt": "2026-07-09T07:14:31.335Z",
     "telegramResponse": null
   }
 ]

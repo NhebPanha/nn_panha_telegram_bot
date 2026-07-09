@@ -1,6 +1,6 @@
 import { db } from '../../utils/db'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
     const groups = await db.getGroups()
     const logs = await db.getLogs()
@@ -20,7 +20,6 @@ export default defineEventHandler(async (event) => {
         name: g.name,
         isActive: g.active,
         type: g.type || 'group',
-        botId: g.botId,
         isAdmin: g.isAdmin || false,
         permissionsVerified: g.permissionsVerified || false,
         createdAt: g.createdAt || new Date().toISOString(),

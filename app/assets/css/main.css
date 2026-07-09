@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: rgb(2 6 23); /* Slate-950 background base */
+:root {
+  --tf-page-bg: rgb(2 6 23); /* Slate-950 base (dark) */
 }
+
+body {
+  background-color: var(--tf-page-bg);
+  transition: background-color 0.25s ease;
+}
+
+/* ============================================================
+   LIGHT THEME
+   Scoped remap of the dark neutral utilities to light values.
+   Accent colors (purple / emerald / rose / amber / blue …) are
+   intentionally left untouched so branding stays consistent.
+   ============================================================ */
+html.theme-light {
+  --tf-page-bg: #eef2f7;
+}
+
+/* Page + surface backgrounds */
+html.theme-light .bg-slate-950 { background-color: #eef2f7; }
+html.theme-light .bg-slate-950\/80 { background-color: rgba(255, 255, 255, 0.9); }
+html.theme-light .bg-slate-950\/60 { background-color: rgba(255, 255, 255, 0.75); }
+html.theme-light .bg-slate-950\/40 { background-color: rgba(255, 255, 255, 0.6); }
+html.theme-light .bg-slate-900 { background-color: #ffffff; }
+html.theme-light .bg-slate-900\/90 { background-color: rgba(255, 255, 255, 0.96); }
+html.theme-light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.85); }
+html.theme-light .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.72); }
+html.theme-light .bg-slate-800 { background-color: #e2e8f0; }
+html.theme-light .bg-slate-800\/40 { background-color: rgba(148, 163, 184, 0.22); }
+html.theme-light .bg-slate-800\/10 { background-color: rgba(148, 163, 184, 0.12); }
+html.theme-light .bg-slate-700 { background-color: #cbd5e1; }
+
+/* Text colors */
+html.theme-light .text-white { color: #0f172a; }
+html.theme-light .text-slate-100 { color: #1e293b; }
+html.theme-light .text-slate-200 { color: #1e293b; }
+html.theme-light .text-slate-300 { color: #334155; }
+html.theme-light .text-slate-400 { color: #64748b; }
+html.theme-light .text-slate-500 { color: #94a3b8; }
+html.theme-light .text-slate-600 { color: #b4bfce; }
+/* Decorative oversized background icons */
+html.theme-light .text-slate-800\/20 { color: rgba(100, 116, 139, 0.14); }
+
+/* Borders */
+html.theme-light .border-slate-950,
+html.theme-light .border-slate-900 { border-color: #e6ebf2; }
+html.theme-light .border-slate-800,
+html.theme-light .border-slate-800\/80 { border-color: #dbe2ea; }
+html.theme-light .border-slate-700\/60,
+html.theme-light .border-slate-700\/50 { border-color: #cbd5e1; }
+
+/* Placeholders */
+html.theme-light .placeholder-slate-600::placeholder,
+html.theme-light .placeholder-slate-500::placeholder { color: #94a3b8; }
+
+/* Soften the ambient gradient blobs on light bg */
+html.theme-light .blur-\[120px\] { opacity: 0.4; }
+
+/* Keep code chips readable in light mode */
+html.theme-light code { color: #7c3aed; }

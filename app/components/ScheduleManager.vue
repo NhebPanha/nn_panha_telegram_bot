@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useSchedulesStore, type Schedule } from '../stores/schedules'
 import { useBotStore } from '../stores/bot'
 import { useToast } from '../composables/useToast'
-import { CalendarRange, Plus, Trash2, Edit2, Clock, RefreshCw, FileText, Image, Video, File, Globe, Cpu, Check, AlertCircle } from 'lucide-vue-next'
+import { CalendarRange, Plus, Trash2, Edit2, Clock, RefreshCw, FileText, Image, Video, File, Globe, AlertCircle } from 'lucide-vue-next'
 
 const schedulesStore = useSchedulesStore()
 const botStore = useBotStore()
@@ -11,7 +11,7 @@ const toast = useToast()
 
 onMounted(async () => {
   await schedulesStore.fetchSchedules()
-  await botStore.fetchBots()
+  await botStore.fetchBot()
 })
 
 const showModal = ref(false)
@@ -29,7 +29,6 @@ const formMessage = ref('')
 const formMessageType = ref<'text' | 'photo' | 'video' | 'document'>('text')
 const formMediaUrl = ref('')
 const formParseMode = ref<'HTML' | 'MarkdownV2'>('HTML')
-const formBotId = ref<string>('')
 
 // Key timezone list
 const timezones = [
@@ -64,7 +63,6 @@ const openAddModal = () => {
   formMessageType.value = 'text'
   formMediaUrl.value = ''
   formParseMode.value = 'HTML'
-  formBotId.value = botStore.bots.length > 0 ? String(botStore.bots[0].id) : ''
   showModal.value = true
 }
 
@@ -81,7 +79,6 @@ const openEditModal = (schedule: any) => {
   formMessageType.value = schedule.messageType || 'text'
   formMediaUrl.value = schedule.mediaUrl || ''
   formParseMode.value = schedule.parseMode || 'HTML'
-  formBotId.value = schedule.botId ? String(schedule.botId) : ''
   showModal.value = true
 }
 
@@ -90,8 +87,8 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-  if (!formTitle.value.trim() || !formTime.value.trim() || !formMessage.value.trim() || !formBotId.value) {
-    toast.error('Title, Bot, Schedule Type, Time/Cron, and Message are required')
+  if (!formTitle.value.trim() || !formTime.value.trim() || !formMessage.value.trim()) {
+    toast.error('Title, Schedule Type, Time/Cron, and Message are required')
     return
   }
 
@@ -103,8 +100,7 @@ const handleSubmit = async () => {
     message: formMessage.value.trim(),
     messageType: formMessageType.value,
     mediaUrl: formMessageType.value !== 'text' ? formMediaUrl.value.trim() : '',
-    parseMode: formParseMode.value,
-    botId: parseInt(formBotId.value, 10)
+    parseMode: formParseMode.value
   }
 
   if (formType.value === 'weekly') {
@@ -172,11 +168,6 @@ const formatScheduleTime = (s: Schedule) => {
   return s.time
 }
 
-const getBotName = (botId: number) => {
-  const bot = botStore.bots.find(b => b.id === botId)
-  return bot ? `@${bot.username}` : `Bot ID: ${botId}`
-}
-
 const getMsgTypeIcon = (type: string) => {
   switch (type) {
     case 'photo': return Image
@@ -201,7 +192,7 @@ const getMsgTypeIcon = (type: string) => {
       </div>
       <button
         @click="openAddModal"
-        :disabled="botStore.bots.length === 0"
+        :disabled="!botStore.isConfigured"
         class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:pointer-events-none text-white text-sm font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-purple-500/15 transition-all flex items-center gap-2 hover:-translate-y-0.5"
       >
         <Plus class="w-4 h-4" />
@@ -209,13 +200,13 @@ const getMsgTypeIcon = (type: string) => {
       </button>
     </div>
 
-    <!-- Alert if no bots -->
-    <div v-if="botStore.bots.length === 0" class="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 flex items-start gap-3">
+    <!-- Alert if no bot -->
+    <div v-if="!botStore.isConfigured" class="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 flex items-start gap-3">
       <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
       <div>
-        <h5 class="text-sm font-bold">No Active Bots Configured</h5>
+        <h5 class="text-sm font-bold">No Bot Configured</h5>
         <p class="text-xs text-slate-400 mt-1">
-          You must configure and verify at least one Telegram Bot inside the <span class="font-bold text-slate-350">Bot Settings</span> tab before creating schedules.
+          You must configure and verify a Telegram Bot inside the <span class="font-bold text-slate-350">Bot Settings</span> tab before creating schedules.
         </p>
       </div>
     </div>
@@ -251,10 +242,6 @@ const getMsgTypeIcon = (type: string) => {
               <h4 class="text-sm font-bold text-white group-hover:text-purple-400 transition-colors truncate">
                 {{ schedule.title }}
               </h4>
-              <p class="text-[10px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
-                <Cpu class="w-3 h-3 text-purple-400" />
-                {{ getBotName(schedule.botId) }}
-              </p>
             </div>
             <button
               @click="handleToggleStatus(schedule)"
@@ -344,33 +331,17 @@ const getMsgTypeIcon = (type: string) => {
             />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Bot Selector -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Sender Bot</label>
-              <select
-                v-model="formBotId"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
-              >
-                <option value="" disabled>Select Bot...</option>
-                <option v-for="b in botStore.bots" :key="b.id" :value="String(b.id)">
-                  @{{ b.username }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Timezone -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Timezone</label>
-              <select
-                v-model="formTimezone"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-xs focus:outline-none"
-              >
-                <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
-                  {{ tz.label }}
-                </option>
-              </select>
-            </div>
+          <!-- Timezone -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Timezone</label>
+            <select
+              v-model="formTimezone"
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-xs focus:outline-none"
+            >
+              <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
+                {{ tz.label }}
+              </option>
+            </select>
           </div>
 
           <div class="grid grid-cols-2 gap-4">

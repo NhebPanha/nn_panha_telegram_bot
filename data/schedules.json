@@ -4,14 +4,18 @@
     "title": "Morning Message",
     "time": "08:00",
     "message": "ដល់ម៉ោងចូលធ្វើការងារហើយ បងៗ ប្អូនៗ ទាំងឡាយ🌞",
-    "active": true
+    "active": true,
+    "dayOfWeek": null,
+    "dayOfMonth": null
   },
   {
     "id": 2,
     "title": "Lunch Reminder",
     "time": "12:00",
     "message": "ដល់ម៉ោងបរិភោបអាហាហើយ បងៗ ប្អូនៗ ទាំងឡាយ ☀️",
-    "active": true
+    "active": true,
+    "dayOfWeek": null,
+    "dayOfMonth": null
   },
   {
     "id": 3,

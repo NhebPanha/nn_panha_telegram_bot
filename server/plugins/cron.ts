@@ -1,17 +1,26 @@
 import cron from 'node-cron'
-import { db } from '../utils/db'
+import { db, JSONSchedule, JSONGroup } from '../utils/db'
 import { decryptToken, encryptToken } from '../utils/crypto'
-import { verifyTelegramBot } from '../utils/telegram'
+import {
+  verifyTelegramBot,
+  sendTelegramMessage,
+  sendTelegramPhoto,
+  sendTelegramVideo,
+  sendTelegramDocument
+} from '../utils/telegram'
+
+// Sequential delay helper (Telegram rate-limit protection)
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Helper to check if a single field of a cron expression matches the value
 function matchCronField(field: string, val: number): boolean {
   if (field === '*') return true
-  
+
   // Lists e.g., 1,2,5
   if (field.includes(',')) {
     return field.split(',').some(f => matchCronField(f, val))
   }
-  
+
   // Ranges e.g., 1-5
   const rangeMatch = field.match(/^(\d+)-(\d+)$/)
   if (rangeMatch) {
@@ -19,7 +28,7 @@ function matchCronField(field: string, val: number): boolean {
     const end = parseInt(rangeMatch[2], 10)
     return val >= start && val <= end
   }
-  
+
   // Steps e.g., */5 or 1-10/2
   const stepParts = field.split('/')
   if (stepParts.length === 2) {
@@ -37,7 +46,7 @@ function matchCronField(field: string, val: number): boolean {
       }
     }
   }
-  
+
   // Exact match
   return parseInt(field, 10) === val
 }
@@ -62,58 +71,55 @@ async function syncEnvironmentVariables() {
     const envToken = process.env.TELEGRAM_BOT_TOKEN
     const envChatId = process.env.TELEGRAM_GROUP_CHAT_ID
 
-    let botId = 1
-
     if (envToken) {
       const trimmedToken = envToken.trim()
       if (trimmedToken) {
-        const bots = await db.getBots()
-        let existingBot = null
-        
-        for (const b of bots) {
+        const existing = await db.getBot()
+        let sameToken = false
+        if (existing) {
           try {
-            const dec = decryptToken(b.token)
-            if (dec === trimmedToken) {
-              existingBot = b
-              break
-            }
+            sameToken = decryptToken(existing.token) === trimmedToken
           } catch {}
         }
 
-        if (!existingBot) {
+        if (!existing || !sameToken) {
           console.log('[Init] Syncing Telegram Bot Token from environment variable...')
           const encrypted = encryptToken(trimmedToken)
           let username = 'EnvBot'
           let firstName = 'Env Bot'
+          let permissions = { can_join_groups: true, can_read_all_group_messages: true, supports_inline_queries: false }
           try {
             const info = await verifyTelegramBot(trimmedToken)
             username = info.username || username
             firstName = info.first_name || firstName
+            permissions = {
+              can_join_groups: info.can_join_groups,
+              can_read_all_group_messages: info.can_read_all_group_messages,
+              supports_inline_queries: info.supports_inline_queries
+            }
           } catch (e: any) {
             console.warn('[Init] Failed to verify Telegram Bot Token from env:', e.message)
           }
-          const newBot = await db.createBot(encrypted, username, firstName, {
-            can_join_groups: true,
-            can_read_all_group_messages: true,
-            supports_inline_queries: false
-          }, true)
-          botId = newBot.id
+          await db.setBot(encrypted, username, firstName, permissions, true)
           console.log('[Init] Telegram Bot Token synced successfully.')
-        } else {
-          botId = existingBot.id
         }
       }
     }
 
     if (envChatId) {
       const trimmedChatId = envChatId.trim()
-      if (trimmedChatId) {
+      // Only seed a group if the env value is a valid Telegram chat ID
+      // (numeric ID or public @username) — skip invite links / URLs / tokens.
+      const isValidChatId = /^-?\d+$/.test(trimmedChatId) || /^@[A-Za-z0-9_]{3,}$/.test(trimmedChatId)
+      if (trimmedChatId && isValidChatId) {
         const existing = await db.getGroupByChatId(trimmedChatId)
         if (!existing) {
           console.log('[Init] Adding Telegram Group from environment variable chat ID:', trimmedChatId)
-          await db.createGroup('Default Group (Env)', trimmedChatId, 'group', botId, true)
+          await db.createGroup('Default Group (Env)', trimmedChatId, 'group', true)
           console.log('[Init] Group added successfully.')
         }
+      } else if (trimmedChatId) {
+        console.warn(`[Init] TELEGRAM_GROUP_CHAT_ID "${trimmedChatId}" is not a valid chat ID (use -100... or @username). Skipping auto-seed.`)
       }
     }
   } catch (error: any) {
@@ -125,13 +131,10 @@ async function seedDefaultSchedules() {
   try {
     const schedules = await db.getSchedules()
     if (schedules.length === 0) {
-      const bots = await db.getBots()
-      const primaryBotId = bots.length > 0 ? bots[0].id : 1
-
       console.log('[Cron] Seeding default schedules...')
-      await db.createSchedule('Morning Message', 'Good morning everyone 🌞', '08:00', 'daily', 'Asia/Phnom_Penh', primaryBotId, 'text', '', 'HTML')
-      await db.createSchedule('Lunch Reminder', 'Good afternoon ☀️', '12:00', 'daily', 'Asia/Phnom_Penh', primaryBotId, 'text', '', 'HTML')
-      await db.createSchedule('Evening Message', 'Good evening 🌙', '17:00', 'daily', 'Asia/Phnom_Penh', primaryBotId, 'text', '', 'HTML')
+      await db.createSchedule('Morning Message', 'Good morning everyone 🌞', '08:00', 'daily', 'Asia/Phnom_Penh', 'text', '', 'HTML')
+      await db.createSchedule('Lunch Reminder', 'Good afternoon ☀️', '12:00', 'daily', 'Asia/Phnom_Penh', 'text', '', 'HTML')
+      await db.createSchedule('Evening Message', 'Good evening 🌙', '17:00', 'daily', 'Asia/Phnom_Penh', 'text', '', 'HTML')
       console.log('[Cron] Default schedules seeded successfully!')
     }
   } catch (error) {
@@ -139,9 +142,37 @@ async function seedDefaultSchedules() {
   }
 }
 
-export default defineNitroPlugin((nitroApp) => {
+// Dispatch a schedule's message to every active target, sequentially with a
+// 500ms delay between sends to stay within Telegram rate limits.
+async function dispatchSchedule(schedule: JSONSchedule, groups: JSONGroup[], token: string) {
+  for (const group of groups) {
+    let response: any = null
+    try {
+      if (schedule.messageType === 'photo' && schedule.mediaUrl) {
+        response = await sendTelegramPhoto(token, group.chatId, schedule.mediaUrl, schedule.message, schedule.parseMode)
+      } else if (schedule.messageType === 'video' && schedule.mediaUrl) {
+        response = await sendTelegramVideo(token, group.chatId, schedule.mediaUrl, schedule.message, schedule.parseMode)
+      } else if (schedule.messageType === 'document' && schedule.mediaUrl) {
+        response = await sendTelegramDocument(token, group.chatId, schedule.mediaUrl, schedule.message, schedule.parseMode)
+      } else {
+        response = await sendTelegramMessage(token, group.chatId, schedule.message, schedule.parseMode)
+      }
+
+      await db.createLog(group.id, group.name, schedule.id, schedule.message, 'SUCCESS', null, response)
+      console.log(`[Cron] Sent "${schedule.title}" to ${group.name} (${group.chatId}).`)
+    } catch (sendError: any) {
+      await db.createLog(group.id, group.name, schedule.id, schedule.message, 'FAILED', sendError.message)
+      console.error(`[Cron] Failed to send "${schedule.title}" to ${group.name}:`, sendError.message)
+    }
+
+    // Rate-limit safeguard between sequential dispatches
+    await delay(500)
+  }
+}
+
+export default defineNitroPlugin(() => {
   console.log('[Nitro Plugin] Cron Scheduler initialized!')
-  
+
   // Sync environment variables and seed database on load
   syncEnvironmentVariables().then(() => {
     seedDefaultSchedules()
@@ -155,6 +186,20 @@ export default defineNitroPlugin((nitroApp) => {
       const activeSchedules = schedules.filter(s => s.active)
 
       if (activeSchedules.length === 0) {
+        return
+      }
+
+      // Single bot must be configured and active to broadcast
+      const bot = await db.getBot()
+      if (!bot || !bot.active) {
+        return
+      }
+
+      let token = ''
+      try {
+        token = decryptToken(bot.token)
+      } catch (e: any) {
+        console.error('[Cron] Failed to decrypt bot token:', e.message)
         return
       }
 
@@ -195,30 +240,13 @@ export default defineNitroPlugin((nitroApp) => {
         }
 
         if (isMatch) {
-          console.log(`[Cron] Schedule "${schedule.title}" matches current time. Queueing broadcasts...`)
-
-          // Filter groups: must be active, and if groups are bound to a specific bot, match the schedule's bot ID
-          const targetGroups = activeGroups.filter(
-            g => g.botId === null || g.botId === schedule.botId
-          )
-
-          if (targetGroups.length === 0) {
-            console.log(`[Cron] No active target groups matches bot ID ${schedule.botId} for schedule: ${schedule.title}`)
+          if (activeGroups.length === 0) {
+            console.log(`[Cron] Schedule "${schedule.title}" matched but there are no active target groups.`)
             continue
           }
 
-          // Enqueue message dispatch for each group target
-          for (const group of targetGroups) {
-            await db.createQueueItem(
-              schedule.botId,
-              group.chatId,
-              schedule.message,
-              schedule.messageType,
-              schedule.mediaUrl,
-              schedule.parseMode,
-              schedule.id
-            )
-          }
+          console.log(`[Cron] Schedule "${schedule.title}" matches current time. Dispatching broadcasts...`)
+          await dispatchSchedule(schedule, activeGroups, token)
 
           // Mark schedule execution
           await db.updateSchedule(schedule.id, {

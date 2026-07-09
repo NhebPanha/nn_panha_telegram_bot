@@ -39,13 +39,20 @@ export default defineEventHandler(async (event) => {
     if (body.name !== undefined) updates.name = body.name.trim()
     if (body.type !== undefined) updates.type = body.type
     if (body.isActive !== undefined) updates.active = !!body.isActive
-    if (body.botId !== undefined) {
-      updates.botId = body.botId ? parseInt(body.botId, 10) : null
-    }
 
     let chatId = group.chatId
     if (body.chatId) {
       chatId = body.chatId.trim()
+
+      // Validate chat ID format (numeric ID or public @username only)
+      const isNumericId = /^-?\d+$/.test(chatId)
+      const isUsername = /^@[A-Za-z0-9_]{3,}$/.test(chatId)
+      if (!isNumericId && !isUsername) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Invalid Chat ID. Use a numeric ID like -1001234567890 or a public @username — not an invite link (t.me/...) or a bot token.'
+        })
+      }
 
       if (chatId !== group.chatId) {
         const duplicate = await db.getGroupByChatId(chatId)
@@ -69,7 +76,6 @@ export default defineEventHandler(async (event) => {
         name: updatedGroup.name,
         isActive: updatedGroup.active,
         type: updatedGroup.type || 'group',
-        botId: updatedGroup.botId,
         isAdmin: updatedGroup.isAdmin || false,
         permissionsVerified: updatedGroup.permissionsVerified || false,
         createdAt: updatedGroup.createdAt || new Date().toISOString()

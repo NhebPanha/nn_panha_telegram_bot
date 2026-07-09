@@ -5,45 +5,49 @@ import { sendTelegramMessage } from '../../utils/telegram'
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    if (!body || !body.botId || !body.chatId || !body.message) {
+    if (!body || !body.chatId || !body.message) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'botId, chatId, and message are required'
+        statusMessage: 'chatId and message are required'
       })
     }
 
-    const botId = parseInt(body.botId, 10)
-    if (isNaN(botId)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid Bot ID format'
-      })
-    }
-
-    const bot = await db.getBotById(botId)
+    const bot = await db.getBot()
     if (!bot) {
       throw createError({
         statusCode: 404,
-        statusMessage: `Bot with ID ${botId} not found`
+        statusMessage: 'No bot is configured'
       })
     }
+
+    // Guard against invalid targets (bot links, tokens, invite URLs)
+    const chatId = body.chatId.trim()
+    const isValidChatId = /^-?\d+$/.test(chatId) || /^@[A-Za-z0-9_]{3,}$/.test(chatId)
+    if (!isValidChatId) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid target chat ID. Add the bot to your group and pick the group here — its ID looks like -1001234567890, not a t.me link or token.'
+      })
+    }
+
+    const group = await db.getGroupByChatId(chatId)
+    const chatTitle = group ? group.name : `Test Chat ID: ${chatId}`
 
     let response
     try {
       const token = decryptToken(bot.token)
-      response = await sendTelegramMessage(token, body.chatId, body.message, 'HTML')
+      response = await sendTelegramMessage(token, chatId, body.message, 'HTML')
     } catch (err: any) {
       // Create failure log
       await db.createLog(
-        botId,
-        null,
-        `Test Chat ID: ${body.chatId}`,
+        group ? group.id : null,
+        chatTitle,
         null,
         body.message,
         'FAILED',
         err.message
       )
-      
+
       throw createError({
         statusCode: 400,
         statusMessage: `Failed to send test message: ${err.message}`
@@ -52,9 +56,8 @@ export default defineEventHandler(async (event) => {
 
     // Create success log
     const log = await db.createLog(
-      botId,
-      null,
-      `Test Chat ID: ${body.chatId}`,
+      group ? group.id : null,
+      chatTitle,
       null,
       body.message,
       'SUCCESS',

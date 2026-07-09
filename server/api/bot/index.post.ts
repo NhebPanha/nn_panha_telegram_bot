@@ -20,8 +20,8 @@ export default defineEventHandler(async (event) => {
     // 2. Encrypt the token for secure storage
     const encryptedToken = encryptToken(token)
 
-    // 3. Save to database
-    const newBot = await db.createBot(
+    // 3. Save to database (single bot, overwrites any existing)
+    const bot = await db.setBot(
       encryptedToken,
       botInfo.username || 'UnknownBot',
       botInfo.first_name || 'Telegram Bot',
@@ -36,19 +36,19 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       bot: {
-        id: newBot.id,
-        username: newBot.username,
-        firstName: newBot.firstName,
-        active: newBot.active,
-        permissions: newBot.permissions,
-        status: newBot.status,
-        createdAt: newBot.createdAt
+        id: bot.id,
+        username: bot.username,
+        firstName: bot.firstName,
+        active: bot.active,
+        permissions: bot.permissions,
+        status: bot.status,
+        createdAt: bot.createdAt
       }
     }
   } catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || `Failed to add bot: ${error.message}`
+      statusMessage: error.statusMessage || `Failed to save bot: ${error.message}`
     })
   }
 })

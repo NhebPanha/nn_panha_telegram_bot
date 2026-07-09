@@ -16,36 +16,37 @@ export interface BotInfo {
 
 export const useBotStore = defineStore('bot', {
   state: () => ({
-    bots: [] as BotInfo[],
+    bot: null as BotInfo | null,
     isLoading: false
   }),
 
   getters: {
-    activeBots: (state) => state.bots.filter(b => b.active)
+    isConfigured: (state) => state.bot !== null,
+    isOnline: (state) => !!state.bot && state.bot.active && state.bot.status === 'ONLINE'
   },
 
   actions: {
-    async fetchBots() {
+    async fetchBot() {
       this.isLoading = true
       try {
-        const data = await $fetch<BotInfo[]>('/api/bots')
-        this.bots = data
+        const data = await $fetch<BotInfo | null>('/api/bot')
+        this.bot = data
       } catch (error) {
-        console.error('Failed to fetch bot settings list:', error)
+        console.error('Failed to fetch bot settings:', error)
       } finally {
         this.isLoading = false
       }
     },
 
-    async addBot(token: string) {
+    async saveBot(token: string) {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean; bot: BotInfo }>('/api/bots', {
+        const data = await $fetch<{ success: boolean; bot: BotInfo }>('/api/bot', {
           method: 'POST',
           body: { token }
         })
         if (data.success) {
-          await this.fetchBots()
+          this.bot = data.bot
         }
         return data
       } finally {
@@ -53,33 +54,30 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async toggleBotStatus(id: number, active: boolean) {
+    async toggleBotStatus(active: boolean) {
       try {
-        const data = await $fetch<{ success: boolean; bot: BotInfo }>(`/api/bots/${id}`, {
+        const data = await $fetch<{ success: boolean; bot: BotInfo }>('/api/bot', {
           method: 'PUT',
           body: { active }
         })
         if (data.success) {
-          const index = this.bots.findIndex(b => b.id === id)
-          if (index !== -1) {
-            this.bots[index].active = data.bot.active
-          }
+          this.bot = data.bot
         }
         return data
       } catch (error) {
-        console.error(`Failed to toggle status for bot ${id}:`, error)
+        console.error('Failed to toggle bot status:', error)
         throw error
       }
     },
 
-    async deleteBot(id: number) {
+    async deleteBot() {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean }>(`/api/bots/${id}`, {
+        const data = await $fetch<{ success: boolean }>('/api/bot', {
           method: 'DELETE'
         })
         if (data.success) {
-          this.bots = this.bots.filter(b => b.id !== id)
+          this.bot = null
         }
         return data
       } finally {
@@ -87,18 +85,14 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async verifyBot(id: number) {
+    async verifyBot() {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean; status: 'ONLINE' | 'OFFLINE'; bot: BotInfo }>('/api/bots/verify', {
-          method: 'POST',
-          body: { id }
+        const data = await $fetch<{ success: boolean; status: 'ONLINE' | 'OFFLINE'; message?: string; bot: BotInfo }>('/api/bot/verify', {
+          method: 'POST'
         })
         if (data.bot) {
-          const index = this.bots.findIndex(b => b.id === id)
-          if (index !== -1) {
-            this.bots[index] = data.bot
-          }
+          this.bot = data.bot
         }
         return data
       } finally {
@@ -106,12 +100,12 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async testMessage(botId: number, chatId: string, message: string) {
+    async testMessage(chatId: string, message: string) {
       this.isLoading = true
       try {
-        const data = await $fetch<{ success: boolean; log: any }>('/api/bots/test', {
+        const data = await $fetch<{ success: boolean; log: any }>('/api/bot/test', {
           method: 'POST',
-          body: { botId, chatId, message }
+          body: { chatId, message }
         })
         return data
       } finally {

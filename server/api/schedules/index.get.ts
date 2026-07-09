@@ -19,7 +19,6 @@ export default defineEventHandler(async (event) => {
       messageType: s.messageType || 'text',
       mediaUrl: s.mediaUrl || '',
       parseMode: s.parseMode || 'HTML',
-      botId: s.botId,
       isActive: s.active,
       createdAt: s.createdAt || new Date().toISOString(),
       lastExecutedAt: s.lastExecutedAt

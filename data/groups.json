@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "Panha ~ bot",
+    "chatId": "-5421159575",
+    "active": true,
+    "type": "group",
+    "createdAt": "2026-07-09T07:05:42.561Z"
+  }
+]

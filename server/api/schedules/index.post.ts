@@ -3,17 +3,16 @@ import { db } from '../../utils/db'
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    if (!body || !body.title || !body.message || !body.time || !body.botId) {
+    if (!body || !body.title || !body.message || !body.time) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Title, Message, Time, and Bot ID are required'
+        statusMessage: 'Title, Message, and Time are required'
       })
     }
 
     const title = body.title.trim()
     const message = body.message.trim()
     const time = body.time.trim()
-    const botId = parseInt(body.botId, 10)
     const type = body.type || 'daily'
     const timezone = body.timezone || 'Asia/Phnom_Penh'
     const messageType = body.messageType || 'text'
@@ -21,12 +20,12 @@ export default defineEventHandler(async (event) => {
     const parseMode = body.parseMode || 'HTML'
     const isActive = body.isActive !== undefined ? !!body.isActive : true
 
-    // 1. Verify Bot ID exists
-    const bot = await db.getBotById(botId)
+    // 1. A bot must be configured to schedule broadcasts
+    const bot = await db.getBot()
     if (!bot) {
       throw createError({
         statusCode: 400,
-        statusMessage: `Associated Telegram bot with ID ${botId} does not exist`
+        statusMessage: 'No Telegram bot is configured. Add a bot in Bot Settings before scheduling.'
       })
     }
 
@@ -102,7 +101,6 @@ export default defineEventHandler(async (event) => {
       time,
       type,
       timezone,
-      botId,
       messageType,
       mediaUrl,
       parseMode,
@@ -124,7 +122,6 @@ export default defineEventHandler(async (event) => {
         messageType: schedule.messageType,
         mediaUrl: schedule.mediaUrl,
         parseMode: schedule.parseMode,
-        botId: schedule.botId,
         isActive: schedule.active,
         createdAt: schedule.createdAt
       }

@@ -15,8 +15,18 @@ export default defineEventHandler(async (event) => {
     const chatId = body.chatId.trim()
     let name = body.name ? body.name.trim() : ''
     let type: 'group' | 'channel' | 'supergroup' | 'private' = body.type || 'group'
-    const botId = body.botId ? parseInt(body.botId, 10) : null
     const isActive = body.isActive !== undefined ? !!body.isActive : true
+
+    // Validate the chat ID format. Telegram only accepts a numeric ID
+    // (e.g. -1001234567890) or a public @username — not invite links or tokens.
+    const isNumericId = /^-?\d+$/.test(chatId)
+    const isUsername = /^@[A-Za-z0-9_]{3,}$/.test(chatId)
+    if (!isNumericId && !isUsername) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid Chat ID. Use a numeric ID like -1001234567890 or a public @username — not an invite link (t.me/...) or a bot token.'
+      })
+    }
 
     // Check if group already exists
     const existingGroup = await db.getGroupByChatId(chatId)
@@ -30,26 +40,21 @@ export default defineEventHandler(async (event) => {
     let isAdmin = false
     let permissionsVerified = false
 
-    // Auto-detect metadata if botId is associated and token is readable
-    if (botId) {
-      const bot = await db.getBotById(botId)
-      if (bot) {
-        try {
-          const token = decryptToken(bot.token)
-          const info = await getChatInfo(token, chatId)
-          
-          // Auto fill name if empty or dynamically refresh it
-          name = info.title || info.first_name || info.username || name || `Chat ${chatId}`
-          type = info.type
-          permissionsVerified = true
-          
-          // If it is a channel or group, check if bot is admin
-          // Try to execute a check or default to true since bot was able to fetch chat details successfully
-          isAdmin = true
-        } catch (botError: any) {
-          console.warn(`[Groups API] Bot failed to auto-detect chat info: ${botError.message}`)
-          // Don't fail the request, just fallback to manual details
-        }
+    // Auto-detect metadata using the configured bot if its token is readable
+    const bot = await db.getBot()
+    if (bot) {
+      try {
+        const token = decryptToken(bot.token)
+        const info = await getChatInfo(token, chatId)
+
+        // Auto fill name if empty or dynamically refresh it
+        name = info.title || info.first_name || info.username || name || `Chat ${chatId}`
+        type = info.type
+        permissionsVerified = true
+        isAdmin = true
+      } catch (botError: any) {
+        console.warn(`[Groups API] Bot failed to auto-detect chat info: ${botError.message}`)
+        // Don't fail the request, just fallback to manual details
       }
     }
 
@@ -58,8 +63,8 @@ export default defineEventHandler(async (event) => {
       name = `Chat (${chatId})`
     }
 
-    const group = await db.createGroup(name, chatId, type, botId, isActive)
-    
+    const group = await db.createGroup(name, chatId, type, isActive)
+
     // Save verification flags
     if (permissionsVerified) {
       await db.updateGroup(group.id, { isAdmin, permissionsVerified })
@@ -73,7 +78,6 @@ export default defineEventHandler(async (event) => {
         name: name,
         isActive: group.active,
         type: type,
-        botId: botId,
         isAdmin: isAdmin,
         permissionsVerified: permissionsVerified,
         createdAt: group.createdAt

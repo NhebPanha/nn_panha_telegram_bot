@@ -63,10 +63,13 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
           <Cpu class="w-6 h-6" />
         </div>
         <div>
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Bots Status</p>
+          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Bot Status</p>
           <h3 class="text-2xl font-bold text-white mt-1">
-            {{ dashboardStore.stats.activeBots }} <span class="text-xs font-normal text-slate-400">/ {{ dashboardStore.stats.totalBots }} active</span>
+            {{ dashboardStore.stats.botOnline ? 'Online' : (dashboardStore.stats.botConfigured ? 'Offline' : 'None') }}
           </h3>
+          <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+            {{ dashboardStore.stats.botUsername ? '@' + dashboardStore.stats.botUsername : 'No bot configured' }}
+          </p>
         </div>
       </div>
     </div>
@@ -101,9 +104,9 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
           <CalendarRange class="w-6 h-6" />
         </div>
         <div>
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Delivery Queue</p>
+          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Active Schedules</p>
           <h3 class="text-2xl font-bold text-white mt-1">
-            {{ dashboardStore.stats.pendingQueueCount }} <span class="text-xs font-normal text-slate-400">pending</span>
+            {{ dashboardStore.stats.activeSchedules }} <span class="text-xs font-normal text-slate-400">/ {{ dashboardStore.stats.totalSchedules }} total</span>
           </h3>
         </div>
       </div>

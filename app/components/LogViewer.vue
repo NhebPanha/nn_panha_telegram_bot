@@ -2,19 +2,16 @@
 import { onMounted, ref, watch } from 'vue'
 import { useLogsStore } from '../stores/logs'
 import { useGroupsStore } from '../stores/groups'
-import { useBotStore } from '../stores/bot'
-import { Search, RotateCcw, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw, Cpu } from 'lucide-vue-next'
+import { Search, RotateCcw, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
 
 const logsStore = useLogsStore()
 const groupsStore = useGroupsStore()
-const botStore = useBotStore()
 
 const searchInput = ref('')
 
 onMounted(async () => {
   await logsStore.fetchLogs()
   await groupsStore.fetchGroups()
-  await botStore.fetchBots()
 })
 
 const handleSearch = () => {
@@ -34,7 +31,6 @@ const handlePageChange = (page: number) => {
 
 watch(() => logsStore.status, () => logsStore.fetchLogs(1))
 watch(() => logsStore.groupId, () => logsStore.fetchLogs(1))
-watch(() => logsStore.botId, () => logsStore.fetchLogs(1))
 
 const getStatusClass = (status: string) => {
   switch (status) {
@@ -81,19 +77,6 @@ const getStatusClass = (status: string) => {
           <option value="">All Statuses</option>
           <option value="SUCCESS">Success</option>
           <option value="FAILED">Failed</option>
-          <option value="RETRYING">Retrying</option>
-          <option value="PENDING">Pending</option>
-        </select>
-
-        <!-- Bot Filter -->
-        <select
-          v-model="logsStore.botId"
-          class="bg-slate-950/80 border border-slate-850 text-slate-350 rounded-xl py-2 px-2.5 text-xs focus:outline-none focus:border-purple-500 transition-all cursor-pointer max-w-[150px]"
-        >
-          <option value="">All Dispatch Bots</option>
-          <option v-for="b in botStore.bots" :key="b.id" :value="String(b.id)">
-            @{{ b.username }}
-          </option>
         </select>
 
         <!-- Target Filter -->
@@ -123,7 +106,6 @@ const getStatusClass = (status: string) => {
       <table class="w-full text-left border-collapse">
         <thead>
           <tr class="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-            <th class="py-3 px-3">Bot</th>
             <th class="py-3 px-3">Destination Target</th>
             <th class="py-3 px-3">Message</th>
             <th class="py-3 px-3">Broadcast Time</th>
@@ -134,7 +116,6 @@ const getStatusClass = (status: string) => {
         <tbody class="divide-y divide-slate-850 text-slate-300 text-xs">
           <!-- Pulse Loading -->
           <tr v-if="logsStore.isLoading" v-for="n in 5" :key="n" class="animate-pulse">
-            <td class="py-3.5 px-3"><div class="h-3.5 bg-slate-850 rounded w-16"></div></td>
             <td class="py-3.5 px-3"><div class="h-3.5 bg-slate-850 rounded w-20"></div></td>
             <td class="py-3.5 px-3"><div class="h-3.5 bg-slate-850 rounded w-48"></div></td>
             <td class="py-3.5 px-3"><div class="h-3.5 bg-slate-850 rounded w-24"></div></td>
@@ -143,21 +124,13 @@ const getStatusClass = (status: string) => {
           </tr>
 
           <tr v-else-if="logsStore.logs.length === 0">
-            <td colspan="6" class="py-16 text-center text-slate-500">
+            <td colspan="5" class="py-16 text-center text-slate-500">
               No audit logs found matching filters.
             </td>
           </tr>
 
           <!-- Rows -->
           <tr v-else v-for="log in logsStore.logs" :key="log.id" class="hover:bg-slate-800/10 transition-colors">
-            <td class="py-3.5 px-3">
-              <div class="font-semibold text-white flex items-center gap-1">
-                <Cpu class="w-3 h-3 text-purple-400" />
-                {{ log.bot?.firstName }}
-              </div>
-              <div class="text-[9px] text-slate-500 font-mono mt-0.5">@{{ log.bot?.username }}</div>
-            </td>
-
             <td class="py-3.5 px-3">
               <div class="font-semibold text-white">{{ log.group?.name || 'Manual/Deleted Target' }}</div>
               <div class="text-[9px] text-slate-500 font-mono mt-0.5">{{ log.group?.chatId }}</div>

@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useGroupsStore } from '../stores/groups'
-import { useBotStore } from '../stores/bot'
 import { useToast } from '../composables/useToast'
 import { Plus, Trash2, Edit2, ShieldAlert, RefreshCw, Search, ShieldCheck, CheckSquare, Square, Download, Upload } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
-const botStore = useBotStore()
 const toast = useToast()
 
 onMounted(async () => {
   await groupsStore.fetchGroups()
-  await botStore.fetchBots()
 })
 
 const showModal = ref(false)
@@ -21,30 +18,25 @@ const currentGroupId = ref('')
 const formChatId = ref('')
 const formName = ref('')
 const formType = ref<'group' | 'channel' | 'supergroup' | 'private'>('group')
-const formBotId = ref<string>('')
 
 // Search and Filter State
 const searchQuery = ref('')
 const typeFilter = ref('')
-const botFilter = ref('')
 
 // Bulk Selection
 const selectedGroupIds = ref<string[]>([])
 
 // Bulk Import Input
 const bulkImportText = ref('')
-const bulkImportBotId = ref<string>('')
 const bulkImportType = ref<'group' | 'channel' | 'supergroup' | 'private'>('group')
 
 // Computed filter list
 const filteredGroups = computed(() => {
   return groupsStore.groups.filter(g => {
-    const matchesSearch = g.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+    const matchesSearch = g.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                           g.chatId.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchesType = typeFilter.value ? g.type === typeFilter.value : true
-    const matchesBot = botFilter.value ? 
-                       (botFilter.value === 'all' ? g.botId === null : String(g.botId) === botFilter.value) : true
-    return matchesSearch && matchesType && matchesBot
+    return matchesSearch && matchesType
   })
 })
 
@@ -75,7 +67,6 @@ const openAddModal = () => {
   formChatId.value = ''
   formName.value = ''
   formType.value = 'group'
-  formBotId.value = ''
   showModal.value = true
 }
 
@@ -85,7 +76,6 @@ const openEditModal = (group: any) => {
   formChatId.value = group.chatId
   formName.value = group.name
   formType.value = group.type || 'group'
-  formBotId.value = group.botId ? String(group.botId) : ''
   showModal.value = true
 }
 
@@ -95,7 +85,6 @@ const closeModal = () => {
 
 const openBulkModal = () => {
   bulkImportText.value = ''
-  bulkImportBotId.value = ''
   bulkImportType.value = 'group'
   showBulkModal.value = true
 }
@@ -110,16 +99,13 @@ const handleSubmit = async () => {
     return
   }
 
-  const selectedBotId = formBotId.value ? parseInt(formBotId.value, 10) : null
-
   try {
     if (isEditing.value) {
       const res = await groupsStore.updateGroup(
         currentGroupId.value,
         formChatId.value.trim(),
         formName.value.trim(),
-        formType.value,
-        selectedBotId
+        formType.value
       )
       if (res.success) {
         toast.success('Broadcast target updated successfully!')
@@ -129,8 +115,7 @@ const handleSubmit = async () => {
       const res = await groupsStore.addGroup(
         formChatId.value.trim(),
         formName.value.trim(),
-        formType.value,
-        selectedBotId
+        formType.value
       )
       if (res.success) {
         toast.success(`Target added successfully! Auto-detected: ${res.group.name}`)
@@ -153,13 +138,12 @@ const handleBulkImport = async () => {
     return
   }
 
-  const selectedBotId = bulkImportBotId.value ? parseInt(bulkImportBotId.value, 10) : null
   let successCount = 0
   let errorCount = 0
 
   for (const chatId of chatIds) {
     try {
-      const res = await groupsStore.addGroup(chatId, '', bulkImportType.value, selectedBotId)
+      const res = await groupsStore.addGroup(chatId, '', bulkImportType.value)
       if (res.success) successCount++
     } catch {
       errorCount++
@@ -208,12 +192,6 @@ const handleDeleteSelected = async () => {
   toast.success(`Deleted ${deletedCount} targets successfully.`)
 }
 
-const getBotName = (botId: number | null) => {
-  if (!botId) return 'All Bots'
-  const bot = botStore.bots.find(b => b.id === botId)
-  return bot ? `@${bot.username}` : `Bot ID: ${botId}`
-}
-
 const getTargetTypeColor = (type: string) => {
   switch (type) {
     case 'channel': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
@@ -257,7 +235,7 @@ const formatTime = (timeStr: string | null) => {
     </div>
 
     <!-- Search & Filters -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
       <div class="relative">
         <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4" />
         <input
@@ -278,19 +256,6 @@ const formatTime = (timeStr: string | null) => {
           <option value="channel">Channel</option>
           <option value="supergroup">Supergroup</option>
           <option value="private">Private Chat</option>
-        </select>
-      </div>
-
-      <div>
-        <select
-          v-model="botFilter"
-          class="w-full bg-slate-950/60 border border-slate-850 focus:border-purple-500 text-white rounded-xl py-2 px-3 text-xs focus:outline-none transition-all"
-        >
-          <option value="">All Bot Mappings</option>
-          <option value="all">Compatible with All Bots</option>
-          <option v-for="b in botStore.bots" :key="b.id" :value="String(b.id)">
-            Only @{{ b.username }}
-          </option>
         </select>
       </div>
     </div>
@@ -340,7 +305,6 @@ const formatTime = (timeStr: string | null) => {
             <th class="py-3 px-3">Type</th>
             <th class="py-3 px-3">Target Name</th>
             <th class="py-3 px-3">Telegram Chat ID</th>
-            <th class="py-3 px-3">Associated Bot</th>
             <th class="py-3 px-3">Verified Status</th>
             <th class="py-3 px-3">Active</th>
             <th class="py-3 px-3">Last Message</th>
@@ -365,7 +329,6 @@ const formatTime = (timeStr: string | null) => {
             </td>
             <td class="py-3.5 px-3 font-semibold text-white">{{ group.name }}</td>
             <td class="py-3.5 px-3 font-mono text-[10px] text-slate-400">{{ group.chatId }}</td>
-            <td class="py-3.5 px-3 font-medium text-slate-400">{{ getBotName(group.botId) }}</td>
             <td class="py-3.5 px-3">
               <span
                 v-if="group.permissionsVerified"
@@ -457,23 +420,6 @@ const formatTime = (timeStr: string | null) => {
             </select>
           </div>
 
-          <!-- Bot ID Association -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Associated Bot</label>
-            <select
-              v-model="formBotId"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
-            >
-              <option value="">Compatible with All Bots</option>
-              <option v-for="b in botStore.bots" :key="b.id" :value="String(b.id)">
-                @{{ b.username }} ({{ b.firstName }})
-              </option>
-            </select>
-            <p class="text-[10px] text-slate-500 mt-1.5">
-              Note: If a bot is associated, saving will try to auto-detect the name and type using getChat.
-            </p>
-          </div>
-
           <!-- Optional Name -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Manual Display Name (Optional)</label>
@@ -540,20 +486,6 @@ const formatTime = (timeStr: string | null) => {
               <option value="channel">Channel</option>
               <option value="supergroup">Supergroup</option>
               <option value="private">Private User Chat</option>
-            </select>
-          </div>
-
-          <!-- Bot ID Association -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Associated Bot</label>
-            <select
-              v-model="bulkImportBotId"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
-            >
-              <option value="">Compatible with All Bots</option>
-              <option v-for="b in botStore.bots" :key="b.id" :value="String(b.id)">
-                @{{ b.username }}
-              </option>
             </select>
           </div>
 

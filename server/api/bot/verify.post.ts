@@ -2,54 +2,40 @@ import { db } from '../../utils/db'
 import { decryptToken } from '../../utils/crypto'
 import { verifyTelegramBot } from '../../utils/telegram'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
-    const body = await readBody(event)
-    if (!body || !body.id) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Bot ID is required'
-      })
-    }
-
-    const botId = parseInt(body.id, 10)
-    if (isNaN(botId)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid Bot ID format'
-      })
-    }
-
-    const bot = await db.getBotById(botId)
+    const bot = await db.getBot()
     if (!bot) {
       throw createError({
         statusCode: 404,
-        statusMessage: `Bot with ID ${botId} not found`
+        statusMessage: 'No bot is configured'
       })
     }
 
     let botInfo
-    let status: 'ONLINE' | 'OFFLINE' = 'ONLINE'
-
     try {
       const token = decryptToken(bot.token)
       botInfo = await verifyTelegramBot(token)
     } catch (err: any) {
-      status = 'OFFLINE'
-      await db.updateBot(botId, { status: 'OFFLINE' })
+      const updated = await db.updateBot({ status: 'OFFLINE' })
       return {
         success: false,
         status: 'OFFLINE',
         message: `Verification failed: ${err.message}`,
         bot: {
-          ...bot,
-          status: 'OFFLINE'
+          id: updated.id,
+          username: updated.username,
+          firstName: updated.firstName,
+          active: updated.active,
+          permissions: updated.permissions,
+          status: updated.status,
+          createdAt: updated.createdAt
         }
       }
     }
 
     // Refresh credentials on success
-    const updated = await db.updateBot(botId, {
+    const updated = await db.updateBot({
       username: botInfo.username || bot.username,
       firstName: botInfo.first_name || bot.firstName,
       status: 'ONLINE',

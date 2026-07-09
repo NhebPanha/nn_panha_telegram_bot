@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
-import { Send, Github } from 'lucide-vue-next'
+import { useTheme } from '../composables/useTheme'
+import { Send, Github, Sun, Moon } from 'lucide-vue-next'
 
 const botStore = useBotStore()
+const { theme, init, toggle } = useTheme()
 
 onMounted(() => {
-  botStore.fetchBots()
+  init()
+  botStore.fetchBot()
 })
 </script>
 
@@ -28,18 +31,24 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-4">
-          <div v-if="botStore.activeBots.length > 0" class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+          <div v-if="botStore.isOnline" class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span class="font-medium text-slate-300">
-              {{ botStore.activeBots[0].username ? `@${botStore.activeBots[0].username}` : 'Bot Active' }}
-              <span v-if="botStore.activeBots.length > 1" class="text-[10px] text-slate-500 ml-1">
-                (+{{ botStore.activeBots.length - 1 }})
-              </span>
+              {{ botStore.bot?.username ? `@${botStore.bot.username}` : 'Bot Active' }}
             </span>
           </div>
+
+          <button
+            @click="toggle"
+            :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+            class="p-2 text-slate-500 hover:text-slate-300 transition-colors border border-slate-900 hover:border-slate-800 bg-slate-950/40 rounded-xl"
+          >
+            <Sun v-if="theme === 'dark'" class="w-4 h-4" />
+            <Moon v-else class="w-4 h-4" />
+          </button>
 
           <a
             href="https://github.com"

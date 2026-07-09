@@ -17,6 +17,99 @@ export interface TelegramChatInfo {
   last_name?: string
 }
 
+export interface TelegramMessageEntity {
+  type: string // 'url' | 'text_link' | 'mention' | ...
+  offset: number
+  length: number
+  url?: string
+}
+
+export interface TelegramIncomingMessage {
+  message_id: number
+  from?: {
+    id: number
+    is_bot: boolean
+    first_name?: string
+    username?: string
+  }
+  chat: {
+    id: number
+    type: 'private' | 'group' | 'supergroup' | 'channel'
+    title?: string
+    username?: string
+  }
+  date: number
+  text?: string
+  caption?: string
+  entities?: TelegramMessageEntity[]
+  caption_entities?: TelegramMessageEntity[]
+  sticker?: {
+    file_id: string
+    emoji?: string
+    set_name?: string
+  }
+}
+
+export interface TelegramChatMemberUpdated {
+  chat: {
+    id: number
+    type: 'private' | 'group' | 'supergroup' | 'channel'
+    title?: string
+    username?: string
+  }
+  new_chat_member?: {
+    status: 'creator' | 'administrator' | 'member' | 'restricted' | 'left' | 'kicked'
+  }
+}
+
+export interface TelegramUpdate {
+  update_id: number
+  message?: TelegramIncomingMessage
+  edited_message?: TelegramIncomingMessage
+  channel_post?: TelegramIncomingMessage
+  edited_channel_post?: TelegramIncomingMessage
+  my_chat_member?: TelegramChatMemberUpdated
+}
+
+// Remove any webhook so long polling (getUpdates) is allowed. This app uses
+// polling, so it's safe to clear a stale webhook on startup.
+export async function deleteTelegramWebhook(token: string): Promise<boolean> {
+  try {
+    const response = await $fetch<{ ok: boolean }>(
+      `https://api.telegram.org/bot${token}/deleteWebhook`,
+      { method: 'POST', body: { drop_pending_updates: false } }
+    )
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+// Long-poll for incoming updates. `timeout` is the server-side long-poll
+// window in seconds; the HTTP client timeout is set slightly higher.
+export async function getTelegramUpdates(
+  token: string,
+  offset: number,
+  timeout = 25
+): Promise<TelegramUpdate[]> {
+  const response = await $fetch<{ ok: boolean; result: TelegramUpdate[]; description?: string }>(
+    `https://api.telegram.org/bot${token}/getUpdates`,
+    {
+      method: 'POST',
+      body: {
+        offset,
+        timeout,
+        allowed_updates: ['message', 'edited_message', 'channel_post', 'edited_channel_post', 'my_chat_member']
+      },
+      timeout: (timeout + 10) * 1000
+    }
+  )
+  if (!response.ok) {
+    throw new Error(response.description || 'Telegram getUpdates responded with ok: false')
+  }
+  return response.result
+}
+
 export async function verifyTelegramBot(token: string): Promise<TelegramBotInfo> {
   try {
     const response = await $fetch<{ ok: boolean; result: TelegramBotInfo }>(

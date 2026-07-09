@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { LayoutDashboard, Settings, Users, CalendarRange, ListTodo } from 'lucide-vue-next'
+import { LayoutDashboard, Settings, Users, CalendarRange, ListTodo, ShieldAlert } from 'lucide-vue-next'
 
 const activeTab = ref('dashboard')
 
@@ -9,6 +9,7 @@ const tabs = [
   { id: 'bot', name: 'Bot Settings', icon: Settings },
   { id: 'groups', name: 'Groups', icon: Users },
   { id: 'schedules', name: 'Schedules', icon: CalendarRange },
+  { id: 'moderation', name: 'Moderation', icon: ShieldAlert },
   { id: 'logs', name: 'Logs', icon: ListTodo }
 ]
 </script>
@@ -42,11 +43,11 @@ const tabs = [
     <div class="space-y-6">
       <div v-if="activeTab === 'dashboard'" class="space-y-8">
         <DashboardStats />
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div class="lg:col-span-8">
             <LogViewer />
           </div>
-          <div class="lg:col-span-4 space-y-6">
+          <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <BotSettings sidebar />
           </div>
         </div>
@@ -62,6 +63,10 @@ const tabs = [
 
       <div v-else-if="activeTab === 'schedules'">
         <ScheduleManager />
+      </div>
+
+      <div v-else-if="activeTab === 'moderation'">
+        <ModerationManager />
       </div>
 
       <div v-else-if="activeTab === 'logs'">

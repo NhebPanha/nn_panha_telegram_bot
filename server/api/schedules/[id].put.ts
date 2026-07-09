@@ -44,19 +44,6 @@ export default defineEventHandler(async (event) => {
     if (body.parseMode !== undefined) updates.parseMode = body.parseMode
     if (body.isActive !== undefined) updates.active = !!body.isActive
 
-    // Bot ID
-    if (body.botId !== undefined) {
-      const botId = parseInt(body.botId, 10)
-      const bot = await db.getBotById(botId)
-      if (!bot) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: `Associated Telegram bot with ID ${botId} does not exist`
-        })
-      }
-      updates.botId = botId
-    }
-
     // Timezone
     if (body.timezone !== undefined) {
       const timezone = body.timezone
@@ -146,7 +133,6 @@ export default defineEventHandler(async (event) => {
         messageType: updated.messageType,
         mediaUrl: updated.mediaUrl,
         parseMode: updated.parseMode,
-        botId: updated.botId,
         isActive: updated.active,
         createdAt: updated.createdAt
       }

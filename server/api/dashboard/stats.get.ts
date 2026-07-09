@@ -1,15 +1,14 @@
 import { db } from '../../utils/db'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
-    const bots = await db.getBots()
+    const bot = await db.getBot()
     const groups = await db.getGroups()
     const schedules = await db.getSchedules()
     const logs = await db.getLogs()
-    const queue = await db.getQueue()
 
-    const totalBots = bots.length
-    const activeBots = bots.filter(b => b.active).length
+    const botConfigured = !!bot
+    const botOnline = !!bot && bot.active && bot.status === 'ONLINE'
 
     const totalGroups = groups.filter(g => g.type !== 'channel').length
     const totalChannels = groups.filter(g => g.type === 'channel').length
@@ -21,8 +20,6 @@ export default defineEventHandler(async (event) => {
     const messagesSent = logs.filter(l => l.status === 'SUCCESS').length
     const failedDeliveries = logs.filter(l => l.status === 'FAILED').length
     const successRate = totalLogs > 0 ? Math.round((messagesSent / totalLogs) * 100) : 100
-
-    const pendingQueueCount = queue.filter(q => q.status === 'PENDING' || q.status === 'RETRYING').length
 
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
@@ -36,15 +33,15 @@ export default defineEventHandler(async (event) => {
     ).length
 
     // Calculate next scheduled message
-    const activeSchedules = schedules.filter(s => s.active && s.type !== 'cron') // standard daily/weekly/monthly HH:MM
+    const upcomingSchedules = schedules.filter(s => s.active && s.type !== 'cron') // standard daily/weekly/monthly HH:MM
     let nextSchedule = null
-    if (activeSchedules.length > 0) {
+    if (upcomingSchedules.length > 0) {
       const now = new Date()
       const currentHours = now.getHours()
       const currentMinutes = now.getMinutes()
       const currentMinutesTotal = currentHours * 60 + currentMinutes
 
-      const schedulesWithDiff = activeSchedules.map(s => {
+      const schedulesWithDiff = upcomingSchedules.map(s => {
         // Parse time HH:MM
         const [hoursStr, minutesStr] = s.time.split(':')
         const hours = parseInt(hoursStr)
@@ -85,16 +82,18 @@ export default defineEventHandler(async (event) => {
     }
 
     return {
-      totalBots,
-      activeBots,
+      botConfigured,
+      botOnline,
+      botUsername: bot ? bot.username : null,
       totalGroups,
       totalChannels,
       overallGroupsCount,
       activeSchedules: activeSchedulesCount,
+      totalSchedules: schedules.length,
       messagesSent,
       failedDeliveries,
       successRate,
-      pendingQueueCount,
+      totalLogs,
       sentToday,
       failedToday,
       nextSchedule

@@ -6,7 +6,6 @@ export interface TelegramGroup {
   name: string
   isActive: boolean
   type: 'group' | 'channel' | 'supergroup' | 'private'
-  botId: number | null
   isAdmin: boolean
   permissionsVerified: boolean
   createdAt: string
@@ -32,12 +31,12 @@ export const useGroupsStore = defineStore('groups', {
       }
     },
 
-    async addGroup(chatId: string, name: string, type: 'group' | 'channel' | 'supergroup' | 'private' = 'group', botId: number | null = null) {
+    async addGroup(chatId: string, name: string, type: 'group' | 'channel' | 'supergroup' | 'private' = 'group') {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; group: TelegramGroup }>('/api/groups', {
           method: 'POST',
-          body: { chatId, name, type, botId }
+          body: { chatId, name, type }
         })
         if (data.success) {
           await this.fetchGroups()
@@ -67,12 +66,12 @@ export const useGroupsStore = defineStore('groups', {
       }
     },
 
-    async updateGroup(id: string, chatId: string, name: string, type?: 'group' | 'channel' | 'supergroup' | 'private', botId?: number | null) {
+    async updateGroup(id: string, chatId: string, name: string, type?: 'group' | 'channel' | 'supergroup' | 'private') {
       this.isLoading = true
       try {
         const data = await $fetch<{ success: boolean; group: TelegramGroup }>(`/api/groups/${id}`, {
           method: 'PUT',
-          body: { chatId, name, type, botId }
+          body: { chatId, name, type }
         })
         if (data.success) {
           await this.fetchGroups()

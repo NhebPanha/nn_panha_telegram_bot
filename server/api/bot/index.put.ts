@@ -2,19 +2,11 @@ import { db } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   try {
-    const idParam = getRouterParam(event, 'id')
-    if (!idParam) {
+    const bot = await db.getBot()
+    if (!bot) {
       throw createError({
-        statusCode: 400,
-        statusMessage: 'Bot ID is required'
-      })
-    }
-
-    const botId = parseInt(idParam, 10)
-    if (isNaN(botId)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid Bot ID format'
+        statusCode: 404,
+        statusMessage: 'No bot is configured'
       })
     }
 
@@ -29,7 +21,7 @@ export default defineEventHandler(async (event) => {
       updates.status = body.status
     }
 
-    const updated = await db.updateBot(botId, updates)
+    const updated = await db.updateBot(updates)
 
     return {
       success: true,
