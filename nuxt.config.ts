@@ -34,8 +34,35 @@ export default defineNuxtConfig({
   },
 
   // Server-side configs (runtimeConfig)
+  // On Cloudflare set these as NUXT_* vars (e.g. NUXT_ENCRYPTION_KEY)
   runtimeConfig: {
-    encryptionKey: process.env.ENCRYPTION_KEY || 'default-secret-key-32-chars-long!'
+    encryptionKey: process.env.ENCRYPTION_KEY || 'default-secret-key-32-chars-long!',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    telegramGroupChatId: process.env.TELEGRAM_GROUP_CHAT_ID || '',
+    // Shared secret used to authenticate Telegram webhook calls
+    webhookSecret: process.env.WEBHOOK_SECRET || 'teleflow-webhook-secret',
+    // Public base URL of the deployment, used to register the webhook
+    publicUrl: process.env.PUBLIC_URL || ''
+  },
+
+  // Cloudflare Workers target
+  nitro: {
+    preset: 'cloudflare-module',
+
+    // Enable Nitro tasks + map the every-minute Cloudflare cron trigger to them
+    experimental: { tasks: true },
+    scheduledTasks: {
+      '* * * * *': ['broadcast']
+    },
+
+    // Production storage -> Cloudflare KV binding (no filesystem on Workers)
+    storage: {
+      data: { driver: 'cloudflareKVBinding', binding: 'DATA' }
+    },
+    // Local dev keeps using the existing data/*.json files
+    devStorage: {
+      data: { driver: 'fs', base: './data' }
+    }
   },
 
   // Pinia setup

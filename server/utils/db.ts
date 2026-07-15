@@ -1,14 +1,11 @@
-import fs from 'fs/promises'
-import path from 'path'
-import crypto from 'crypto'
-
-// File paths
-const DATA_DIR = path.resolve(process.cwd(), 'data')
-const BOT_PATH = path.join(DATA_DIR, 'bot.json')
-const GROUPS_PATH = path.join(DATA_DIR, 'groups.json')
-const SCHEDULES_PATH = path.join(DATA_DIR, 'schedules.json')
-const LOGS_PATH = path.join(DATA_DIR, 'logs.json')
-const MODERATION_PATH = path.join(DATA_DIR, 'moderation.json')
+// Storage keys. Backed by Cloudflare KV in production and by the local
+// data/*.json files during development (see nitro.storage in nuxt.config).
+const BOT_PATH = 'bot.json'
+const GROUPS_PATH = 'groups.json'
+const SCHEDULES_PATH = 'schedules.json'
+const LOGS_PATH = 'logs.json'
+const MODERATION_PATH = 'moderation.json'
+const LEGACY_BOTS_PATH = 'bots.json'
 
 // Interfaces
 export interface JSONBot {
@@ -72,56 +69,60 @@ export interface JSONLog {
   telegramResponse?: any
 }
 
-// Utility to read JSON file helper
-async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+// Nitro storage layer: Cloudflare KV in production, filesystem in dev.
+const store = () => useStorage('data')
+
+async function readJsonFile<T>(key: string, defaultValue: T): Promise<T> {
   try {
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data) as T
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+    const data = await store().getItem<T>(key)
+    if (data === null || data === undefined) {
       return defaultValue
     }
-    console.error(`Error reading file ${filePath}:`, error)
+    // The fs driver may hand back a raw string; KV returns parsed JSON.
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data) as T
+      } catch {
+        return defaultValue
+      }
+    }
+    return data as T
+  } catch (error) {
+    console.error(`Error reading storage key ${key}:`, error)
     return defaultValue
   }
 }
 
-// Utility to write JSON file helper (atomic write via temp file)
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
-  const tempPath = `${filePath}.tmp`
+async function writeJsonFile<T>(key: string, data: T): Promise<void> {
   try {
-    await fs.mkdir(path.dirname(filePath), { recursive: true })
-    await fs.writeFile(tempPath, JSON.stringify(data, null, 2), 'utf-8')
-    await fs.rename(tempPath, filePath)
+    await store().setItem(key, data as any)
   } catch (error) {
-    console.error(`Error writing file ${filePath}:`, error)
-    try {
-      await fs.unlink(tempPath)
-    } catch {}
+    console.error(`Error writing storage key ${key}:`, error)
     throw error
   }
+}
+
+async function removeJsonFile(key: string): Promise<void> {
+  try {
+    await store().removeItem(key)
+  } catch {}
 }
 
 export const db = {
   // Migrate a legacy multi-bot bots.json (array) down to a single bot.json
   async migrateLegacyBotsIfNeeded(): Promise<void> {
-    const legacyPath = path.join(DATA_DIR, 'bots.json')
     try {
-      const legacyExists = await fs.stat(legacyPath).then(() => true).catch(() => false)
-      if (!legacyExists) return
+      const legacyBots = await readJsonFile<JSONBot[] | null>(LEGACY_BOTS_PATH, null)
+      if (!legacyBots) return
 
       // Only migrate if a single bot.json is not already present
-      const currentExists = await fs.stat(BOT_PATH).then(() => true).catch(() => false)
-      if (!currentExists) {
-        const legacyBots = await readJsonFile<JSONBot[]>(legacyPath, [])
-        if (Array.isArray(legacyBots) && legacyBots.length > 0) {
-          console.log('[Migration] Converting legacy bots.json (multi-bot) to single bot.json...')
-          const primary = { ...legacyBots[0], id: 1 }
-          await writeJsonFile(BOT_PATH, primary)
-        }
+      const current = await readJsonFile<JSONBot | null>(BOT_PATH, null)
+      if (!current && Array.isArray(legacyBots) && legacyBots.length > 0) {
+        console.log('[Migration] Converting legacy bots.json (multi-bot) to single bot.json...')
+        await writeJsonFile(BOT_PATH, { ...legacyBots[0], id: 1 })
       }
 
-      await fs.unlink(legacyPath)
+      await removeJsonFile(LEGACY_BOTS_PATH)
       console.log('[Migration] Removed legacy bots.json.')
     } catch (err) {
       console.error('[Migration] Failed to migrate legacy bots.json:', err)
@@ -172,9 +173,7 @@ export const db = {
   async deleteBot(): Promise<boolean> {
     const bot = await this.getBot()
     if (!bot) return false
-    try {
-      await fs.unlink(BOT_PATH)
-    } catch {}
+    await removeJsonFile(BOT_PATH)
     return true
   },
 

@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     const botInfo = await verifyTelegramBot(token)
 
     // 2. Encrypt the token for secure storage
-    const encryptedToken = encryptToken(token)
+    const encryptedToken = await encryptToken(token)
 
     // 3. Save to database (single bot, overwrites any existing)
     const bot = await db.setBot(

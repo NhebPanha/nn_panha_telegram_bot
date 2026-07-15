@@ -7,22 +7,22 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "deploy": "wrangler deploy",
+    "preview:cf": "wrangler dev"
   },
   "dependencies": {
-    "nuxt": "^4.4.8",
-    "vue": "^3.5.39",
-    "vue-router": "^5.1.0",
+    "@pinia/nuxt": "^0.5.1",
     "@vueuse/core": "^10.9.0",
     "@vueuse/nuxt": "^10.9.0",
+    "lucide-vue-next": "^0.368.0",
+    "nuxt": "^4.4.8",
     "pinia": "^2.1.7",
-    "@pinia/nuxt": "^0.5.1",
-    "node-cron": "^3.0.3",
-    "lucide-vue-next": "^0.368.0"
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.11.4",
-    "@types/node-cron": "^3.0.11",
     "@types/node": "^20.12.7"
   }
 }

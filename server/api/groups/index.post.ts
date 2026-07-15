@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     const bot = await db.getBot()
     if (bot) {
       try {
-        const token = decryptToken(bot.token)
+        const token = await decryptToken(bot.token)
         const info = await getChatInfo(token, chatId)
 
         // Auto fill name if empty or dynamically refresh it

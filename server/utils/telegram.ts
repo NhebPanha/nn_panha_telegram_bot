@@ -85,6 +85,49 @@ export async function deleteTelegramWebhook(token: string): Promise<boolean> {
   }
 }
 
+export interface TelegramWebhookInfo {
+  url: string
+  has_custom_certificate: boolean
+  pending_update_count: number
+  last_error_message?: string
+  last_error_date?: number
+}
+
+// Register a webhook so Telegram pushes updates to us (Workers cannot long-poll).
+export async function setTelegramWebhook(
+  token: string,
+  url: string,
+  secretToken: string
+): Promise<boolean> {
+  const response = await $fetch<{ ok: boolean; description?: string }>(
+    `https://api.telegram.org/bot${token}/setWebhook`,
+    {
+      method: 'POST',
+      body: {
+        url,
+        secret_token: secretToken,
+        allowed_updates: ['message', 'edited_message', 'channel_post', 'edited_channel_post', 'my_chat_member'],
+        drop_pending_updates: false
+      }
+    }
+  )
+  if (!response.ok) {
+    throw new Error(response.description || 'Telegram setWebhook responded with ok: false')
+  }
+  return true
+}
+
+export async function getTelegramWebhookInfo(token: string): Promise<TelegramWebhookInfo> {
+  const response = await $fetch<{ ok: boolean; result: TelegramWebhookInfo; description?: string }>(
+    `https://api.telegram.org/bot${token}/getWebhookInfo`,
+    { method: 'GET' }
+  )
+  if (!response.ok) {
+    throw new Error(response.description || 'Telegram getWebhookInfo responded with ok: false')
+  }
+  return response.result
+}
+
 // Long-poll for incoming updates. `timeout` is the server-side long-poll
 // window in seconds; the HTTP client timeout is set slightly higher.
 export async function getTelegramUpdates(

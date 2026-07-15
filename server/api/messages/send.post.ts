@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
 
     let response: any = null
     try {
-      const token = decryptToken(bot.token)
+      const token = await decryptToken(bot.token)
       if (messageType === 'photo' && mediaUrl) {
         response = await sendTelegramPhoto(token, chatId, mediaUrl, message, parseMode)
       } else if (messageType === 'video' && mediaUrl) {

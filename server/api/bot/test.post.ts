@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
 
     let response
     try {
-      const token = decryptToken(bot.token)
+      const token = await decryptToken(bot.token)
       response = await sendTelegramMessage(token, chatId, body.message, 'HTML')
     } catch (err: any) {
       // Create failure log

@@ -14,7 +14,7 @@ export default defineEventHandler(async () => {
 
     let botInfo
     try {
-      const token = decryptToken(bot.token)
+      const token = await decryptToken(bot.token)
       botInfo = await verifyTelegramBot(token)
     } catch (err: any) {
       const updated = await db.updateBot({ status: 'OFFLINE' })
