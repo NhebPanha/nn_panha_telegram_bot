@@ -41,7 +41,7 @@ crons = ["* * * * *"]
 #   npx wrangler secret put NUXT_TELEGRAM_BOT_TOKEN   # optional
 [vars]
 # Public URL of this Worker, used to register the Telegram webhook.
-# NUXT_PUBLIC_URL = "https://nnbot.<your-subdomain>.workers.dev"
+# NUXT_PUBLIC_URL = "https://nnbot.pp_panha_bot.workers.dev"
 
 [observability]
 enabled = true
