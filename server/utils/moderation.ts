@@ -80,8 +80,8 @@ async function moderateMessage(
     const mention = buildMention(msg.from)
     const noticeText =
       reason === 'sticker'
-        ? `🚫 ${mention}, stickers are not allowed in this group.`
-        : `🚫 ${mention}, links are not allowed in this group.`
+        ? `🚫ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, stickers are not allowed in this group.`
+        : `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, links are not allowed in this group.`
     try {
       await sendTelegramMessage(token, chatId, noticeText, 'HTML')
     } catch (notifyErr: any) {
