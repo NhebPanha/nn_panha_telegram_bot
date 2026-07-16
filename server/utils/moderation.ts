@@ -1,5 +1,21 @@
 import { db, ModerationSettings } from './db'
-import { deleteMessage, TelegramIncomingMessage, TelegramUpdate } from './telegram'
+import { deleteMessage, sendTelegramMessage, TelegramIncomingMessage, TelegramUpdate } from './telegram'
+
+// Escape text so it is safe inside an HTML-parse-mode Telegram message.
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+// Build a tappable Telegram mention for the sender. Using tg://user?id= makes
+// it notify the user even when they have no @username set.
+function buildMention(from?: TelegramIncomingMessage['from']): string {
+  if (!from) return 'Someone'
+  const displayName =
+    [from.first_name, from.last_name].filter(Boolean).join(' ') ||
+    (from.username ? `@${from.username}` : '') ||
+    'user'
+  return `<a href="tg://user?id=${from.id}">${escapeHtml(displayName)}</a>`
+}
 
 // Detect whether a message contains a link/URL.
 export function hasLink(msg: TelegramIncomingMessage): boolean {
@@ -53,13 +69,26 @@ async function moderateMessage(
   }
   if (!reason) return
 
+  const chatId = String(msg.chat.id)
+  const who = msg.from?.username ? `@${msg.from.username}` : (msg.from?.first_name || 'user')
+  const chatTitle = msg.chat.title || chatId
+
   try {
-    await deleteMessage(token, String(msg.chat.id), msg.message_id)
+    await deleteMessage(token, chatId, msg.message_id)
 
-    const who = msg.from?.username ? `@${msg.from.username}` : (msg.from?.first_name || 'user')
-    const chatTitle = msg.chat.title || String(msg.chat.id)
-    const group = await db.getGroupByChatId(String(msg.chat.id))
+    // Post a public notice in the group tagging the sender.
+    const mention = buildMention(msg.from)
+    const noticeText =
+      reason === 'sticker'
+        ? `🚫 ${mention}, stickers are not allowed in this group.`
+        : `🚫 ${mention}, links are not allowed in this group.`
+    try {
+      await sendTelegramMessage(token, chatId, noticeText, 'HTML')
+    } catch (notifyErr: any) {
+      console.warn(`[Moderation] Deleted ${reason} but failed to post mention: ${notifyErr.message}`)
+    }
 
+    const group = await db.getGroupByChatId(chatId)
     await db.createLog(
       group ? group.id : null,
       chatTitle,
@@ -71,7 +100,7 @@ async function moderateMessage(
     )
     console.log(`[Moderation] Deleted ${reason} in "${chatTitle}" from ${who}`)
   } catch (err: any) {
-    console.warn(`[Moderation] Failed to delete ${reason} in chat ${msg.chat.id}: ${err.message}`)
+    console.warn(`[Moderation] Failed to delete ${reason} in chat ${chatId}: ${err.message}`)
   }
 }
 
