@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
+import { useAuthStore } from '../stores/auth'
 import { useTheme } from '../composables/useTheme'
-import { Send, Github, Sun, Moon } from 'lucide-vue-next'
+import { Send, Github, Sun, Moon, LogOut, User } from 'lucide-vue-next'
 
 const botStore = useBotStore()
+const authStore = useAuthStore()
 const { theme, init, toggle } = useTheme()
 
 onMounted(() => {
@@ -41,6 +43,13 @@ onMounted(() => {
             </span>
           </div>
 
+          <div v-if="authStore.user" class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+            <User class="w-3.5 h-3.5 text-slate-400" />
+            <span class="font-medium text-slate-300">
+              {{ authStore.user.username }}
+            </span>
+          </div>
+
           <button
             @click="toggle"
             :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -57,6 +66,15 @@ onMounted(() => {
           >
             <Github class="w-4 h-4" />
           </a>
+
+          <button
+            v-if="authStore.user"
+            @click="authStore.logout()"
+            title="Log out"
+            class="p-2 text-rose-500 hover:text-rose-400 transition-colors border border-slate-900 hover:border-rose-950 bg-slate-950/40 rounded-xl"
+          >
+            <LogOut class="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

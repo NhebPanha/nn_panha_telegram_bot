@@ -5,9 +5,17 @@ const GROUPS_PATH = 'groups.json'
 const SCHEDULES_PATH = 'schedules.json'
 const LOGS_PATH = 'logs.json'
 const MODERATION_PATH = 'moderation.json'
+const USERS_PATH = 'users.json'
 const LEGACY_BOTS_PATH = 'bots.json'
 
 // Interfaces
+export interface JSONUser {
+  id: string
+  username: string
+  passwordHash: string
+  createdAt: string
+}
+
 export interface JSONBot {
   id: number
   token: string // Encrypted token
@@ -391,5 +399,32 @@ export const db = {
 
     await this.saveLogs(logs)
     return newLog
+  },
+
+  // User Management
+  async getUsers(): Promise<JSONUser[]> {
+    return readJsonFile<JSONUser[]>(USERS_PATH, [])
+  },
+
+  async saveUsers(users: JSONUser[]): Promise<void> {
+    await writeJsonFile(USERS_PATH, users)
+  },
+
+  async getUserByUsername(username: string): Promise<JSONUser | null> {
+    const users = await this.getUsers()
+    return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null
+  },
+
+  async createUser(username: string, passwordHash: string): Promise<JSONUser> {
+    const users = await this.getUsers()
+    const newUser: JSONUser = {
+      id: crypto.randomUUID(),
+      username,
+      passwordHash,
+      createdAt: new Date().toISOString()
+    }
+    users.push(newUser)
+    await this.saveUsers(users)
+    return newUser
   }
 }
