@@ -1,122 +1,354 @@
-# ⚡ TeleFlow — Telegram Bot Message Scheduler & Dashboard
+# ⚡ TeleFlow Pro — Advanced Telegram Bot Management Platform
 
-**TeleFlow** is a modern, responsive self-hosted web application and cron scheduler for managing automated broadcasts to Telegram groups, channels, and chats. Built with **Nuxt 4**, **Tailwind CSS**, and **Pinia**, it provides a slick administrative panel to manage Telegram bots, schedule daily broadcasts, track group targets, and view execution logs.
+**TeleFlow Pro** is a production-ready Telegram Bot Management Platform built with **Nuxt 4**, **Vue 3**, **Tailwind CSS 4**, **Pinia**, and **Nitro Server**.
+
+The platform is designed to manage Telegram bots, groups, channels, scheduled broadcasts, automated messaging workflows, message templates, delivery analytics, and real-time monitoring from a modern web dashboard.
+
+Unlike basic Telegram schedulers, TeleFlow Pro focuses on reliability, scalability, security, and enterprise-level Telegram Bot API integration.
 
 ---
 
-## 🚀 Key Features
+# 🚀 Core Features
 
-- 📊 **Administrative Dashboard Stats**: Real-time summary of active schedules, destination groups, total logs, and message success rates.
-- 🔑 **Secure Bot Token Storage**: Sensitive Telegram Bot API tokens are stored fully encrypted on disk using AES-256-CBC encryption.
-- 🤖 **Connection Verification & Testing**: Verify bot tokens directly against the official Telegram API and send instant test messages to verified chats.
-- 👥 **Group & Channel Management**: Dynamic registry to add, configure, toggle, or delete target Telegram chats/channels using chat IDs.
-- 📅 **Daily Message Scheduling**: Schedule recurring daily messages at specific local times (HH:MM format) with support for raw HTML formatting (e.g. `<b>bold</b>`, `<i>italic</i>`).
-- ⏱️ **Cron-Based Nitro Engine**: A lightweight scheduler plugin powered by `node-cron` checks database schedules every minute to execute tasks.
-- 🪵 **Execution Audit Logs**: Comprehensive history tracking target groups, scheduled times, sent text, delivery statuses (SUCCESS / FAILED), and descriptive error logs if a message fails to send.
-- ⚙️ **Automatic Environment Syncing**: Bootstraps automatically using environment variables (`TELEGRAM_BOT_TOKEN` & `TELEGRAM_GROUP_CHAT_ID`) to populate settings and seeds default schedules (Morning, Lunch, Evening alerts).
-- ⚡ **Rate-Limiting Protection**: sequential timeouts (500ms delay between dispatches) to ensure compliance with Telegram API rate limits.
+## 🤖 Telegram Bot Management
+
+* Add multiple Telegram bots
+* Secure token storage using AES-256 encryption
+* Bot status monitoring
+* Verify bot credentials via Telegram API
+* Display bot information:
+
+  * Bot ID
+  * Username
+  * First Name
+  * Permissions
+  * Status
+
+### Supported Telegram APIs
+
+* getMe
+* getUpdates
+* setWebhook
+* deleteWebhook
+* sendMessage
+* sendPhoto
+* sendDocument
+* sendVideo
+* sendMediaGroup
+* editMessageText
+* deleteMessage
+* pinChatMessage
+* unpinChatMessage
+
+---
+
+## 👥 Telegram Group & Channel Management
+
+Manage all Telegram destinations from a single dashboard.
+
+### Features
+
+* Add Groups
+* Add Channels
+* Add Supergroups
+* Add Private Chats
+* Enable / Disable Targets
+* Bulk Import Chat IDs
+* Bulk Delete Targets
+* Search & Filter Groups
+* Real-Time Status Checking
+
+### Auto Detection
+
+When a bot is added:
+
+* Detect available groups
+* Detect channels
+* Verify bot permissions
+* Verify admin access
+
+---
+
+## 📅 Smart Message Scheduling
+
+Create powerful automated campaigns.
+
+### Schedule Types
+
+* One Time
+* Daily
+* Weekly
+* Monthly
+* Custom Cron Expression
+
+### Examples
+
+Morning Message
+
+08:00 AM
+
+Lunch Reminder
+
+12:00 PM
+
+Evening Broadcast
+
+05:00 PM
+
+Night Report
+
+10:00 PM
+
+### Timezone Support
+
+* UTC
+* Asia/Phnom_Penh
+* Asia/Bangkok
+* Asia/Singapore
+* Asia/Tokyo
+* Custom Timezone Selection
+
+---
+
+## 📝 Rich Telegram Message Builder
+
+Supports Telegram formatting:
+
+### HTML Mode
+
+```html
+<b>Bold</b>
+<i>Italic</i>
+<u>Underline</u>
+<code>Code</code>
+<a href="https://example.com">Link</a>
+```
+
+### Markdown V2 Mode
+
+```md
+*Bold*
+_Italic_
+~Strike~
+`Code`
+```
+
+### Message Types
+
+* Text Messages
+* Photos
+* Videos
+* Documents
+* Stickers
+* Polls
+* Location
+* Contact
+* Albums
+
+---
+
+## 🔄 Queue & Retry System
+
+Production-grade delivery handling.
+
+### Retry Policy
+
+* 1st Retry → 30 seconds
+* 2nd Retry → 2 minutes
+* 3rd Retry → 10 minutes
+
+### Automatic Handling
+
+* Network failures
+* Telegram API errors
+* Rate limit errors
+* Temporary outages
+
+---
+
+## ⚡ Telegram Rate Limit Protection
+
+Built-in Telegram flood protection.
+
+### Features
+
+* Queue Processing
+* Request Throttling
+* Sequential Dispatching
+* Smart Delays
+* Retry Backoff
+
+### Prevents
+
+* 429 Too Many Requests
+* FloodWait Errors
+* API Blocking
+
+---
+
+## 📊 Analytics Dashboard
+
+Real-time monitoring.
+
+### Statistics
+
+* Total Bots
+* Active Bots
+* Total Groups
+* Total Channels
+* Messages Sent
+* Success Rate
+* Failed Deliveries
+* Pending Queue
+
+### Charts
+
+* Daily Messages
+* Weekly Activity
+* Monthly Activity
+* Success vs Failure
+* Top Active Groups
+
+---
+
+## 🪵 Audit Logs & Tracking
+
+Track every Telegram activity.
+
+### Log Information
+
+* Schedule ID
+* Group ID
+* Chat Title
+* Message Content
+* Execution Time
+* Telegram Response
+* Delivery Status
+* Error Details
+
+### Status Types
+
+* SUCCESS
+* FAILED
+* PENDING
+* RETRYING
+* CANCELLED
+
+---
+
+## 🔔 Notification System
+
+System notifications for:
+
+* Failed Messages
+* Bot Disconnected
+* Invalid Token
+* Missing Permissions
+* Schedule Errors
+* Queue Backlog
+
+---
+
+## 🔒 Security Features
+
+### Encryption
+
+* AES-256-CBC
+* Random IV Generation
+* Secure Token Storage
+
+### Protection
+
+* API Validation
+* Input Sanitization
+* Rate Limiting
+* CSRF Protection
+* Secure Environment Variables
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend & Backend Framework**: [Nuxt 4](https://nuxt.com/) (using Vue 3, Nitro engine, and Nuxt 4 directory structure)
-- **State Management**: [Pinia](https://pinia.vuejs.org/) for clean modular stores (`bot`, `dashboard`, `groups`, `logs`, `schedules`)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) for fluid, dark-mode-first glassmorphic user interface design
-- **Icons**: [Lucide Vue Next](https://lucide.dev/) for crisp, uniform iconography
-- **Scheduling**: [Node-cron](https://www.npmjs.com/package/node-cron) running as an in-memory background worker
-- **Database**: Local JSON files (`data/*.json`) utilizing atomic file writes to ensure data integrity without database server overhead
+### Frontend
+
+* Nuxt 4
+* Vue 3
+* Pinia
+* Tailwind CSS 4
+* Lucide Icons
+
+### Backend
+
+* Nitro Server
+* H3 API Routes
+* Node-Cron
+* Telegram Bot API
+
+### Storage
+
+* Local JSON Database
+* Atomic Writes
+* Auto Backup System
 
 ---
 
-## 📂 Project Structure
+## 📂 Enhanced Project Structure
 
 ```text
-nn_bot/
-├── app/                  # Nuxt 4 Frontend App
-│   ├── assets/           # CSS stylesheets and global layouts
-│   ├── components/       # Vue dashboard components
-│   │   ├── BotSettings.vue      # Bot token configs and testing utilities
-│   │   ├── DashboardStats.vue   # Summary widgets showing stats/metrics
-│   │   ├── GroupManager.vue     # Group registration table and toggles
-│   │   ├── LogViewer.vue        # System log viewer with statuses/errors
-│   │   ├── ScheduleManager.vue  # Schedules list, additions, and updates
-│   │   └── ToastList.vue        # Global notification feedback toasts
-│   ├── composables/      # Shared custom composables
-│   ├── layouts/          # Base template structure (default header/footer)
-│   ├── pages/            # Page routing (index dashboard router)
-│   └── stores/           # Pinia reactive state stores
-├── data/                 # Local JSON Database directory
-│   ├── bot.json          # Bot credential information (encrypted token)
-│   ├── groups.json       # Registered group list
-│   ├── logs.json         # Dispatch history logs
-│   └── schedules.json    # Cron daily schedule routines
-├── server/               # Nuxt 4 Backend API
-│   ├── api/              # API endpoints (/bot, /groups, /schedules, /logs, /dashboard)
-│   ├── plugins/          # Nitro server plugins (node-cron initializer)
-│   │   └── cron.ts       # Active cron dispatcher and environment sync
-│   └── utils/            # Server utilities
-│       ├── crypto.ts     # AES-256-CBC encrypt/decrypt bot tokens
-│       ├── db.ts         # JSON file database operations wrapper
-│       └── telegram.ts   # Telegram sendMessage / getMe API integration
-├── .env                  # Environment configurations and initial boot keys
-├── nuxt.config.ts        # Nuxt config (Nuxt 4 directory scheme enabled)
-└── package.json          # Project configurations, commands, and dependencies
+teleflow-pro/
+│
+├── app/
+│   ├── components/
+│   ├── pages/
+│   ├── stores/
+│   ├── composables/
+│   └── layouts/
+│
+├── server/
+│   ├── api/
+│   │   ├── bots/
+│   │   ├── groups/
+│   │   ├── schedules/
+│   │   ├── messages/
+│   │   ├── logs/
+│   │   └── dashboard/
+│   │
+│   ├── plugins/
+│   │   ├── cron.ts
+│   │   ├── queue.ts
+│   │   └── telegram.ts
+│   │
+│   └── utils/
+│       ├── crypto.ts
+│       ├── db.ts
+│       ├── queue.ts
+│       └── telegram.ts
+│
+├── data/
+│   ├── bots.json
+│   ├── groups.json
+│   ├── schedules.json
+│   ├── logs.json
+│   └── queue.json
+│
+├── .env
+├── nuxt.config.ts
+└── package.json
 ```
 
 ---
 
-## ⚙️ Setup & Installation
+# 🎯 Production Goals
 
-### 1. Prerequisites
-Ensure you have **Node.js (v18.x or later)** installed.
+TeleFlow Pro should operate as a complete Telegram automation platform capable of:
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory (or copy `.env.example` if available) and add your keys:
+* Managing multiple Telegram bots
+* Managing unlimited groups/channels
+* Running automated broadcasts
+* Supporting media messages
+* Handling retries automatically
+* Monitoring delivery performance
+* Providing complete audit logs
+* Running continuously without external databases
 
-```ini
-# Encryption key used for encrypting the bot token on disk (32 characters recommended)
-ENCRYPTION_KEY="teleflow-ultra-secure-secret-encryption-key-32b"
-PORT=3000
-
-# Optional: Seed initial credentials on first run
-TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-TELEGRAM_GROUP_CHAT_ID="-100xxxxxxxxx"
-```
-
-### 3. Install Dependencies
-Install all project requirements:
-
-```bash
-# Using npm
-npm install
-
-# Using pnpm
-pnpm install
-```
-
-### 4. Run the Development Server
-Launch the application locally on `http://localhost:3000`:
-
-```bash
-npm run dev
-```
-
-### 5. Build and Deploy for Production
-To package the app for production deployment:
-
-```bash
-# Build the standalone production folder
-npm run build
-
-# Start the node server
-node .output/server/index.mjs
-```
-
----
-
-## 🔒 Security & Database Details
-
-- **Cryptographic Encryption**: Bot tokens are encrypted on disk inside `data/bot.json`. When saving a token, TeleFlow generates a random Initial Vector (IV) and encrypts the token using `aes-256-cbc` based on the hashed `ENCRYPTION_KEY` configured in `.env`.
-- **Atomic Operations**: All database write operations inside `server/utils/db.ts` utilize atomic temp-write-and-rename strategies to avoid data corruption under concurrent write access.
-- **SetNull & Cascades**: Deleting a schedule safely updates related message logs (`scheduleId = null`), and deleting a group cleanses all dependent logs to optimize storage.
+Perfect for communities, businesses, customer support teams, educational groups, news channels, and marketing automation workflows.
