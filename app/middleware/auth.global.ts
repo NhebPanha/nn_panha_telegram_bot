@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await authStore.fetchUser()
   }
 
-  const isPublicPage = ['/login', '/signup'].includes(to.path)
+  const isPublicPage = ['/login'].includes(to.path)
 
   // Redirect to login if not authenticated
   if (!authStore.isAuthenticated && !isPublicPage) {

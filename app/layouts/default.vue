@@ -20,7 +20,7 @@ onMounted(() => {
     <div class="fixed top-0 left-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
     <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
-    <header class="relative z-10 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0">
+    <header class="relative z-30 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/25">

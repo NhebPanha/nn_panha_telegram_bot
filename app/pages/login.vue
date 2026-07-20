@@ -125,15 +125,6 @@ const handleLogin = async () => {
             </template>
           </button>
         </form>
-
-        <div class="mt-8 text-center">
-          <p class="text-xs text-slate-500">
-            Don't have an admin account?
-            <NuxtLink to="/signup" class="text-purple-400 hover:text-purple-300 font-semibold transition-colors ml-1">
-              Create Account
-            </NuxtLink>
-          </p>
-        </div>
       </div>
     </div>
     
