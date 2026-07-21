@@ -108,6 +108,35 @@ Night Report
 * Asia/Tokyo
 * Custom Timezone Selection
 
+Wall-clock fields are resolved with `Intl.DateTimeFormat.formatToParts`, so the
+Worker's own timezone never affects when a schedule fires.
+
+### Delivery Reliability
+
+A Cloudflare cron trigger is best-effort — a tick can arrive late or be dropped.
+Matching the clock exactly would silently lose the broadcast whenever the 08:00
+tick slipped to 08:01, so a schedule stays **due for 10 minutes** after its slot
+(`MISSED_RUN_GRACE_MINUTES` in `server/utils/scheduler.ts`).
+
+Each dispatch resolves to the *slot* it belongs to rather than to "now", and the
+slot is written to `lastExecutedAt` before any message is sent. A repeated or
+delayed tick resolves to that same slot, sees it already claimed, and skips.
+
+Known limitation: the claim lives in KV, which is eventually consistent (reads
+can be served from edge cache for up to ~60s). A tick landing in the grace
+window on a stale read can still double-send. Exactly-once delivery would need
+the claim to move into a Durable Object.
+
+### Manual Trigger
+
+`POST /api/schedules/run` runs one scheduler tick on demand instead of waiting
+for the cron. Its response includes a `skipped` reason — `no bot configured`,
+`no active target groups`, `bot token could not be decrypted`, and so on —
+which is the first thing to check when broadcasts are not arriving.
+
+`{ "force": true }` dispatches every active schedule immediately regardless of
+its slot, to confirm the token, chat IDs and permissions work at all.
+
 ---
 
 ## 📝 Rich Telegram Message Builder
@@ -281,7 +310,7 @@ System notifications for:
 
 * Nitro Server
 * H3 API Routes
-* Node-Cron
+* Nitro Tasks + Cloudflare cron triggers (node-cron cannot run on Workers)
 * Telegram Bot API
 
 ### Storage
@@ -313,26 +342,24 @@ teleflow-pro/
 │   │   ├── logs/
 │   │   └── dashboard/
 │   │
-│   ├── plugins/
-│   │   ├── cron.ts
-│   │   ├── queue.ts
-│   │   └── telegram.ts
+│   ├── tasks/
+│   │   └── broadcast.ts     # runs every minute via Cloudflare cron
 │   │
 │   └── utils/
 │       ├── crypto.ts
 │       ├── db.ts
-│       ├── queue.ts
+│       ├── scheduler.ts     # slot matching + dispatch
 │       └── telegram.ts
 │
-├── data/
-│   ├── bots.json
+├── data/                    # dev only; production reads/writes Cloudflare KV
+│   ├── bot.json
 │   ├── groups.json
 │   ├── schedules.json
 │   ├── logs.json
-│   └── queue.json
+│   └── moderation.json
 │
-├── .env
 ├── nuxt.config.ts
+├── wrangler.toml
 └── package.json
 ```
 
