@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { LayoutDashboard, Settings, Users, CalendarRange, ListTodo, ShieldAlert } from 'lucide-vue-next'
+import { LayoutDashboard, Settings, Users, CalendarRange, ListTodo, ShieldAlert, MessagesSquare } from 'lucide-vue-next'
 
 const activeTab = ref('dashboard')
 
@@ -8,6 +8,7 @@ const tabs = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
   { id: 'bot', name: 'Bot Settings', icon: Settings },
   { id: 'groups', name: 'Groups', icon: Users },
+  { id: 'chat', name: 'Chat', icon: MessagesSquare },
   { id: 'schedules', name: 'Schedules', icon: CalendarRange },
   { id: 'moderation', name: 'Moderation', icon: ShieldAlert },
   { id: 'logs', name: 'Logs', icon: ListTodo }
@@ -26,7 +27,7 @@ const tabs = [
         </p>
       </div>
 
-      <nav class="flex bg-slate-900/60 border border-slate-850 p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
+      <nav class="flex bg-slate-900/60 border border-slate-850 p-1 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
         <button
           v-for="tab in tabs"
           :key="tab.id"
@@ -59,6 +60,10 @@ const tabs = [
 
       <div v-else-if="activeTab === 'groups'">
         <GroupManager />
+      </div>
+
+      <div v-else-if="activeTab === 'chat'">
+        <GroupChat />
       </div>
 
       <div v-else-if="activeTab === 'schedules'">

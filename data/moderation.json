@@ -1,5 +1,1 @@
-{
-  "enabled": true,
-  "deleteLinks": true,
-  "deleteStickers": false
-}
+{"enabled":true,"deleteLinks":false,"deleteStickers":false}

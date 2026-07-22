@@ -6,6 +6,8 @@ const SCHEDULES_PATH = 'schedules.json'
 const LOGS_PATH = 'logs.json'
 const MODERATION_PATH = 'moderation.json'
 const USERS_PATH = 'users.json'
+const MEMBERS_PATH = 'members.json'
+const MESSAGES_PATH = 'messages.json'
 const LEGACY_BOTS_PATH = 'bots.json'
 
 // Interfaces
@@ -63,6 +65,39 @@ export interface ModerationSettings {
   enabled: boolean
   deleteLinks: boolean
   deleteStickers: boolean
+}
+
+// A user the bot has observed in a chat. The Bot API cannot list a group's
+// full membership, so we build this registry from incoming messages (plus a
+// live merge of admins fetched via getChatAdministrators).
+export interface JSONMember {
+  chatId: string
+  userId: number
+  firstName?: string
+  lastName?: string
+  username?: string
+  isBot: boolean
+  status?: 'creator' | 'administrator' | 'member' | 'restricted' | 'left' | 'kicked'
+  messageCount: number
+  firstSeen: string
+  lastSeen: string
+}
+
+// A single message in a group's conversation history (Telegram-style chat view).
+export interface JSONChatMessage {
+  id: string
+  chatId: string
+  messageId: number | null
+  fromId: number | null
+  fromName: string
+  fromUsername?: string
+  isBot: boolean
+  direction: 'in' | 'out' // 'in' = received from Telegram, 'out' = sent from dashboard
+  text: string
+  date: string // ISO date string
+  replyToMessageId?: number | null
+  replyToName?: string
+  replyToText?: string
 }
 
 export interface JSONLog {
@@ -399,6 +434,95 @@ export const db = {
 
     await this.saveLogs(logs)
     return newLog
+  },
+
+  // Group Members (discovered from incoming messages)
+  async getMembers(): Promise<JSONMember[]> {
+    return readJsonFile<JSONMember[]>(MEMBERS_PATH, [])
+  },
+
+  async saveMembers(members: JSONMember[]): Promise<void> {
+    await writeJsonFile(MEMBERS_PATH, members)
+  },
+
+  async getMembersByChatId(chatId: string): Promise<JSONMember[]> {
+    const members = await this.getMembers()
+    return members.filter(m => m.chatId === chatId)
+  },
+
+  // Insert or update a member seen in a chat. `bumpMessage` increments their
+  // message counter and refreshes lastSeen (used when they post a message).
+  async recordMember(
+    chatId: string,
+    user: { id: number; is_bot?: boolean; first_name?: string; last_name?: string; username?: string },
+    bumpMessage = false
+  ): Promise<JSONMember> {
+    const members = await this.getMembers()
+    const now = new Date().toISOString()
+    const index = members.findIndex(m => m.chatId === chatId && m.userId === user.id)
+
+    if (index === -1) {
+      const newMember: JSONMember = {
+        chatId,
+        userId: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+        isBot: !!user.is_bot,
+        status: 'member',
+        messageCount: bumpMessage ? 1 : 0,
+        firstSeen: now,
+        lastSeen: now
+      }
+      members.push(newMember)
+      await this.saveMembers(members)
+      return newMember
+    }
+
+    const existing = members[index]
+    const updated: JSONMember = {
+      ...existing,
+      firstName: user.first_name ?? existing.firstName,
+      lastName: user.last_name ?? existing.lastName,
+      username: user.username ?? existing.username,
+      isBot: user.is_bot ?? existing.isBot,
+      messageCount: existing.messageCount + (bumpMessage ? 1 : 0),
+      lastSeen: bumpMessage ? now : existing.lastSeen
+    }
+    members[index] = updated
+    await this.saveMembers(members)
+    return updated
+  },
+
+  // Group Chat History
+  async getChatMessages(): Promise<JSONChatMessage[]> {
+    return readJsonFile<JSONChatMessage[]>(MESSAGES_PATH, [])
+  },
+
+  async saveChatMessages(messages: JSONChatMessage[]): Promise<void> {
+    await writeJsonFile(MESSAGES_PATH, messages)
+  },
+
+  async getChatMessagesByChatId(chatId: string, limit = 200): Promise<JSONChatMessage[]> {
+    const messages = await this.getChatMessages()
+    return messages
+      .filter(m => m.chatId === chatId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-limit)
+  },
+
+  async addChatMessage(msg: Omit<JSONChatMessage, 'id'>): Promise<JSONChatMessage> {
+    const messages = await this.getChatMessages()
+    const newMessage: JSONChatMessage = { id: crypto.randomUUID(), ...msg }
+    messages.push(newMessage)
+
+    // Cap total stored messages to avoid unbounded growth.
+    if (messages.length > 5000) {
+      messages.splice(0, messages.length - 5000)
+    }
+
+    await this.saveChatMessages(messages)
+    return newMessage
   },
 
   // User Management

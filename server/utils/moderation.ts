@@ -1,5 +1,11 @@
 import { db, ModerationSettings } from './db'
-import { deleteMessage, sendTelegramMessage, TelegramIncomingMessage, TelegramUpdate } from './telegram'
+import {
+  deleteMessage,
+  getChatMember,
+  sendTelegramMessage,
+  TelegramIncomingMessage,
+  TelegramUpdate
+} from './telegram'
 
 // Escape text so it is safe inside an HTML-parse-mode Telegram message.
 function escapeHtml(text: string): string {
@@ -30,6 +36,98 @@ export function hasLink(msg: TelegramIncomingMessage): boolean {
 
 export function isSticker(msg: TelegramIncomingMessage): boolean {
   return !!msg.sticker
+}
+
+// Does this message @-mention (or text-mention) our bot?
+function mentionsBot(msg: TelegramIncomingMessage, botUserId: number, botUsername?: string): boolean {
+  const text = msg.text || msg.caption || ''
+  const entities = [...(msg.entities || []), ...(msg.caption_entities || [])]
+  for (const e of entities) {
+    if (e.type === 'text_mention' && e.user?.id === botUserId) return true
+    if (e.type === 'mention' && botUsername) {
+      const mention = text.substring(e.offset, e.offset + e.length).toLowerCase()
+      if (mention === `@${botUsername.toLowerCase()}`) return true
+    }
+  }
+  return false
+}
+
+// A short label for a replied-to message, used in logs and notices.
+function summariseMessage(msg: TelegramIncomingMessage): string {
+  if (msg.sticker) return `sticker ${msg.sticker.emoji || ''}`.trim()
+  const text = msg.text || msg.caption || '[media]'
+  return text.length > 40 ? `${text.slice(0, 40)}…` : text
+}
+
+/**
+ * Manual moderation command: an admin replies to a message, mentions the bot,
+ * and includes the word "delete". The bot then removes the replied-to message
+ * (a link, sticker, or anything else) plus the command message itself.
+ * Returns true if the message was a delete command (handled — skip further processing).
+ */
+async function handleDeleteCommand(
+  token: string,
+  botUserId: number,
+  botUsername: string | undefined,
+  msg: TelegramIncomingMessage
+): Promise<boolean> {
+  if (msg.chat.type === 'private') return false
+  if (!msg.reply_to_message) return false
+
+  const text = (msg.text || msg.caption || '').toLowerCase()
+  if (!/\bdelete\b/.test(text)) return false
+  if (!mentionsBot(msg, botUserId, botUsername)) return false
+
+  const chatId = String(msg.chat.id)
+  const chatTitle = msg.chat.title || chatId
+
+  // Only chat admins/owner may issue the command — ignore everyone else.
+  if (msg.from && msg.from.id !== botUserId) {
+    try {
+      const member = await getChatMember(token, chatId, msg.from.id)
+      if (member.status !== 'creator' && member.status !== 'administrator') {
+        // Silently drop the command message from non-admins.
+        await deleteMessage(token, chatId, msg.message_id).catch(() => {})
+        return true
+      }
+    } catch (err: any) {
+      console.warn(`[Command] Could not verify admin for delete command: ${err.message}`)
+      return true
+    }
+  }
+
+  const target = msg.reply_to_message
+  const who = msg.from?.username ? `@${msg.from.username}` : (msg.from?.first_name || 'admin')
+
+  try {
+    await deleteMessage(token, chatId, target.message_id)
+    // Also remove the "@bot delete" command message to keep the chat clean.
+    await deleteMessage(token, chatId, msg.message_id).catch(() => {})
+
+    const group = await db.getGroupByChatId(chatId)
+    await db.createLog(
+      group ? group.id : null,
+      chatTitle,
+      null,
+      `🗑️ ${who} removed a message via reply-command: "${summariseMessage(target)}"`,
+      'SUCCESS',
+      null,
+      null
+    )
+    console.log(`[Command] ${who} deleted message ${target.message_id} in "${chatTitle}"`)
+  } catch (err: any) {
+    console.warn(`[Command] Failed to delete replied message in ${chatId}: ${err.message}`)
+    const group = await db.getGroupByChatId(chatId)
+    await db.createLog(
+      group ? group.id : null,
+      chatTitle,
+      null,
+      `Reply-command delete failed: ${err.message}`,
+      'FAILED',
+      err.message
+    )
+  }
+  return true
 }
 
 // Auto-register a group/channel the bot belongs to so it becomes a selectable
@@ -104,11 +202,51 @@ async function moderateMessage(
   }
 }
 
+// Record the sender into the member registry and store the message into the
+// chat history so the dashboard can show members and a Telegram-style thread.
+async function recordActivity(msg: TelegramIncomingMessage) {
+  if (msg.chat.type === 'private') return
+  const chatId = String(msg.chat.id)
+
+  if (msg.from) {
+    await db.recordMember(chatId, msg.from, true)
+  }
+
+  const text = msg.text || msg.caption || (msg.sticker ? `[sticker ${msg.sticker.emoji || ''}]` : '[media]')
+  const fromName =
+    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') ||
+    (msg.from?.username ? `@${msg.from.username}` : 'Unknown')
+
+  // Capture reply context so the dashboard thread can show what was replied to.
+  const replied = msg.reply_to_message
+  const repliedName = replied
+    ? [replied.from?.first_name, replied.from?.last_name].filter(Boolean).join(' ') ||
+      (replied.from?.username ? `@${replied.from.username}` : 'Unknown')
+    : undefined
+
+  await db.addChatMessage({
+    chatId,
+    messageId: msg.message_id,
+    fromId: msg.from?.id ?? null,
+    fromName,
+    fromUsername: msg.from?.username,
+    isBot: !!msg.from?.is_bot,
+    direction: 'in',
+    text,
+    date: new Date((msg.date || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+    replyToMessageId: replied?.message_id ?? null,
+    replyToName: repliedName,
+    replyToText: replied ? summariseMessage(replied) : undefined
+  })
+}
+
 /**
- * Handle a single Telegram update: discover its chat, then moderate it.
+ * Handle a single Telegram update: discover its chat, record activity, then moderate it.
  */
 export async function handleTelegramUpdate(token: string, botUserId: number, update: TelegramUpdate) {
   const settings = await db.getModerationSettings()
+  const bot = await db.getBot()
+  const botUsername = bot?.username
 
   // Bot was added to / changed status in a chat -> register it
   if (update.my_chat_member) {
@@ -124,5 +262,10 @@ export async function handleTelegramUpdate(token: string, botUserId: number, upd
   if (!msg) return
 
   await autoRegisterChat(msg.chat)
+
+  // Manual "@bot delete" reply-command takes priority; if handled, stop here.
+  if (await handleDeleteCommand(token, botUserId, botUsername, msg)) return
+
+  await recordActivity(msg)
   await moderateMessage(token, botUserId, msg, settings)
 }

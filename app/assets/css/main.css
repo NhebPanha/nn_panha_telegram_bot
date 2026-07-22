@@ -63,3 +63,12 @@ html.theme-light .blur-\[120px\] { opacity: 0.4; }
 
 /* Keep code chips readable in light mode */
 html.theme-light code { color: #7c3aed; }
+
+/* Hide horizontal scrollbar (e.g. the tab nav) while keeping it scrollable */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;            /* Chrome, Safari, Edge */
+}

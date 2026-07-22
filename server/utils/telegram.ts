@@ -18,10 +18,11 @@ export interface TelegramChatInfo {
 }
 
 export interface TelegramMessageEntity {
-  type: string // 'url' | 'text_link' | 'mention' | ...
+  type: string // 'url' | 'text_link' | 'mention' | 'text_mention' | ...
   offset: number
   length: number
   url?: string
+  user?: { id: number; is_bot?: boolean; first_name?: string; username?: string } // for 'text_mention'
 }
 
 export interface TelegramIncomingMessage {
@@ -49,6 +50,7 @@ export interface TelegramIncomingMessage {
     emoji?: string
     set_name?: string
   }
+  reply_to_message?: TelegramIncomingMessage
 }
 
 export interface TelegramChatMemberUpdated {
@@ -154,6 +156,65 @@ export async function getTelegramUpdates(
   return response.result
 }
 
+export interface TelegramUser {
+  id: number
+  is_bot: boolean
+  first_name?: string
+  last_name?: string
+  username?: string
+}
+
+export interface TelegramChatMember {
+  user: TelegramUser
+  status: 'creator' | 'administrator' | 'member' | 'restricted' | 'left' | 'kicked'
+}
+
+// Fetch the administrators of a chat. This is the only member-listing endpoint
+// the Bot API exposes (bots cannot enumerate the full member list of a group).
+export async function getChatAdministrators(token: string, chatId: string): Promise<TelegramChatMember[]> {
+  try {
+    const response = await $fetch<{ ok: boolean; result: TelegramChatMember[] }>(
+      `https://api.telegram.org/bot${token}/getChatAdministrators`,
+      { method: 'POST', body: { chat_id: chatId } }
+    )
+    if (!response.ok) throw new Error('Telegram API responded with ok: false')
+    return response.result
+  } catch (error: any) {
+    const message = error.data?.description || error.message || 'Unknown error'
+    throw new Error(`Telegram getChatAdministrators Failed: ${message}`)
+  }
+}
+
+// Look up a single member's status in a chat (used to authorize commands).
+export async function getChatMember(token: string, chatId: string, userId: number): Promise<TelegramChatMember> {
+  try {
+    const response = await $fetch<{ ok: boolean; result: TelegramChatMember }>(
+      `https://api.telegram.org/bot${token}/getChatMember`,
+      { method: 'POST', body: { chat_id: chatId, user_id: userId } }
+    )
+    if (!response.ok) throw new Error('Telegram API responded with ok: false')
+    return response.result
+  } catch (error: any) {
+    const message = error.data?.description || error.message || 'Unknown error'
+    throw new Error(`Telegram getChatMember Failed: ${message}`)
+  }
+}
+
+// Total member count of a chat (a plain number; no per-user detail).
+export async function getChatMemberCount(token: string, chatId: string): Promise<number> {
+  try {
+    const response = await $fetch<{ ok: boolean; result: number }>(
+      `https://api.telegram.org/bot${token}/getChatMemberCount`,
+      { method: 'POST', body: { chat_id: chatId } }
+    )
+    if (!response.ok) throw new Error('Telegram API responded with ok: false')
+    return response.result
+  } catch (error: any) {
+    const message = error.data?.description || error.message || 'Unknown error'
+    throw new Error(`Telegram getChatMemberCount Failed: ${message}`)
+  }
+}
+
 export async function verifyTelegramBot(token: string): Promise<TelegramBotInfo> {
   try {
     const response = await $fetch<{ ok: boolean; result: TelegramBotInfo }>(
@@ -195,7 +256,8 @@ export async function sendTelegramMessage(
   token: string,
   chatId: string,
   text: string,
-  parseMode: 'HTML' | 'MarkdownV2' = 'HTML'
+  parseMode: 'HTML' | 'MarkdownV2' = 'HTML',
+  replyToMessageId?: number
 ): Promise<{ message_id: number }> {
   try {
     const response = await $fetch<{ ok: boolean; result: { message_id: number } }>(
@@ -205,7 +267,12 @@ export async function sendTelegramMessage(
         body: {
           chat_id: chatId,
           text: text,
-          parse_mode: parseMode
+          parse_mode: parseMode,
+          // reply_parameters is the current API; allow_sending_without_reply
+          // avoids an error if the target message was already deleted.
+          ...(replyToMessageId
+            ? { reply_parameters: { message_id: replyToMessageId, allow_sending_without_reply: true } }
+            : {})
         }
       }
     )
