@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
 import { useToast } from '../composables/useToast'
-import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X } from 'lucide-vue-next'
+import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2 } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
@@ -51,6 +51,18 @@ const startReply = (msg: ChatMessage) => {
 
 const cancelReply = () => {
   replyingTo.value = null
+}
+
+const handleDelete = async (msg: ChatMessage) => {
+  if (!msg.messageId || !activeGroupId.value) return
+  if (!confirm('Delete this message from the group? This cannot be undone.')) return
+  try {
+    await chatStore.deleteMessage(activeGroupId.value, msg.messageId)
+    if (replyingTo.value?.messageId === msg.messageId) replyingTo.value = null
+    toast.success('Message deleted')
+  } catch (error: any) {
+    toast.error(error.statusMessage || 'Failed to delete message')
+  }
 }
 
 const refresh = async () => {
@@ -246,14 +258,24 @@ onBeforeUnmount(() => {
                 <p class="whitespace-pre-wrap break-words">{{ msg.text }}</p>
                 <p class="text-[9px] mt-1 opacity-60 text-right">{{ formatTime(msg.date) }}</p>
               </div>
-              <!-- Reply action -->
-              <button
-                @click="startReply(msg)"
-                class="self-center p-1.5 text-slate-500 hover:text-purple-300 rounded-lg hover:bg-slate-800 opacity-0 group-hover/msg:opacity-100 transition-opacity"
-                title="Reply"
-              >
-                <Reply class="w-3.5 h-3.5" />
-              </button>
+              <!-- Message actions -->
+              <div class="self-center flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                <button
+                  @click="startReply(msg)"
+                  class="p-1.5 text-slate-500 hover:text-purple-300 rounded-lg hover:bg-slate-800"
+                  title="Reply"
+                >
+                  <Reply class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  v-if="msg.messageId"
+                  @click="handleDelete(msg)"
+                  class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-500/10"
+                  title="Delete message"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
             <div ref="messagesEnd"></div>
           </div>
