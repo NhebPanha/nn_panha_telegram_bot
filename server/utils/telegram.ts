@@ -25,6 +25,14 @@ export interface TelegramMessageEntity {
   user?: { id: number; is_bot?: boolean; first_name?: string; username?: string } // for 'text_mention'
 }
 
+export interface TelegramDocument {
+  file_id: string
+  file_unique_id?: string
+  file_name?: string
+  mime_type?: string
+  file_size?: number
+}
+
 export interface TelegramIncomingMessage {
   message_id: number
   from?: {
@@ -50,6 +58,7 @@ export interface TelegramIncomingMessage {
     emoji?: string
     set_name?: string
   }
+  document?: TelegramDocument
   reply_to_message?: TelegramIncomingMessage
 }
 

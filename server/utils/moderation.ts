@@ -34,8 +34,25 @@ export function hasLink(msg: TelegramIncomingMessage): boolean {
   return /(https?:\/\/|www\.|t\.me\/|telegram\.me\/|\b[a-z0-9-]+\.(com|net|org|io|me|xyz|info|co|link)\b)/i.test(text)
 }
 
+export const RESTRICTED_FILE_EXTENSIONS = [
+  'exe', 'bat', 'vbs', 'ps1', 'sh', 'msi', 'scr', 'docm', 'xlsm', 'pptm',
+  'rtf', 'pdf', 'lnk', 'hta', 'cpl', 'js', 'jse', 'wsf', 'cmd', 'py',
+  'iso', 'img', 'vhd', 'elf', 'dmg', 'pkg', 'apk'
+]
+
 export function isSticker(msg: TelegramIncomingMessage): boolean {
   return !!msg.sticker
+}
+
+export function hasRestrictedFile(msg: TelegramIncomingMessage): { isRestricted: boolean; fileName: string; ext: string } {
+  if (!msg.document) return { isRestricted: false, fileName: '', ext: '' }
+  const fileName = msg.document.file_name || ''
+  const lowerName = fileName.toLowerCase()
+  const matched = RESTRICTED_FILE_EXTENSIONS.find(ext => lowerName.endsWith('.' + ext))
+  if (matched) {
+    return { isRestricted: true, fileName, ext: `.${matched}` }
+  }
+  return { isRestricted: false, fileName: '', ext: '' }
 }
 
 // Does this message @-mention (or text-mention) our bot?
@@ -55,6 +72,7 @@ function mentionsBot(msg: TelegramIncomingMessage, botUserId: number, botUsernam
 // A short label for a replied-to message, used in logs and notices.
 function summariseMessage(msg: TelegramIncomingMessage): string {
   if (msg.sticker) return `sticker ${msg.sticker.emoji || ''}`.trim()
+  if (msg.document) return `file "${msg.document.file_name || 'document'}"`
   const text = msg.text || msg.caption || '[media]'
   return text.length > 40 ? `${text.slice(0, 40)}…` : text
 }
@@ -160,10 +178,18 @@ async function moderateMessage(
   if (msg.chat.type === 'private') return
 
   let reason = ''
+  let fileDetail = ''
+
   if (settings.deleteStickers && isSticker(msg)) {
     reason = 'sticker'
   } else if (settings.deleteLinks && hasLink(msg)) {
     reason = 'link'
+  } else if (settings.deleteFiles) {
+    const fileCheck = hasRestrictedFile(msg)
+    if (fileCheck.isRestricted) {
+      reason = 'file'
+      fileDetail = fileCheck.ext ? ` (${fileCheck.ext})` : ''
+    }
   }
   if (!reason) return
 
@@ -178,8 +204,10 @@ async function moderateMessage(
     const mention = buildMention(msg.from)
     const noticeText =
       reason === 'sticker'
-        ? `🚫ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, stickers are not allowed in this group.`
-        : `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, links are not allowed in this group.`
+        ? `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, stickers are not allowed in this group.`
+        : reason === 'link'
+        ? `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, links are not allowed in this group.`
+        : `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, restricted files${fileDetail} are not allowed in this group.`
     try {
       await sendTelegramMessage(token, chatId, noticeText, 'HTML')
     } catch (notifyErr: any) {
@@ -191,12 +219,12 @@ async function moderateMessage(
       group ? group.id : null,
       chatTitle,
       null,
-      `🧹 Auto-deleted ${reason} from ${who}`,
+      `🧹 Auto-deleted ${reason}${fileDetail} from ${who}`,
       'SUCCESS',
       null,
       null
     )
-    console.log(`[Moderation] Deleted ${reason} in "${chatTitle}" from ${who}`)
+    console.log(`[Moderation] Deleted ${reason}${fileDetail} in "${chatTitle}" from ${who}`)
   } catch (err: any) {
     console.warn(`[Moderation] Failed to delete ${reason} in chat ${chatId}: ${err.message}`)
   }
@@ -212,7 +240,10 @@ async function recordActivity(msg: TelegramIncomingMessage) {
     await db.recordMember(chatId, msg.from, true)
   }
 
-  const text = msg.text || msg.caption || (msg.sticker ? `[sticker ${msg.sticker.emoji || ''}]` : '[media]')
+  const text =
+    msg.text ||
+    msg.caption ||
+    (msg.document ? `[file: ${msg.document.file_name || 'document'}]` : msg.sticker ? `[sticker ${msg.sticker.emoji || ''}]` : '[media]')
   const fromName =
     [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') ||
     (msg.from?.username ? `@${msg.from.username}` : 'Unknown')

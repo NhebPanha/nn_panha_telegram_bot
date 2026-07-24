@@ -65,6 +65,7 @@ export interface ModerationSettings {
   enabled: boolean
   deleteLinks: boolean
   deleteStickers: boolean
+  deleteFiles: boolean
 }
 
 // A user the bot has observed in a chat. The Bot API cannot list a group's
@@ -384,7 +385,8 @@ export const db = {
     return readJsonFile<ModerationSettings>(MODERATION_PATH, {
       enabled: false,
       deleteLinks: false,
-      deleteStickers: false
+      deleteStickers: false,
+      deleteFiles: false
     })
   },
 

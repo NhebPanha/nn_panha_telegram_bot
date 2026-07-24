@@ -4,12 +4,20 @@ import { useModerationStore } from '../stores/moderation'
 import { useBotStore } from '../stores/bot'
 import { useWebhookStore } from '../stores/webhook'
 import { useToast } from '../composables/useToast'
-import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw } from 'lucide-vue-next'
+import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX } from 'lucide-vue-next'
 
 const moderationStore = useModerationStore()
 const botStore = useBotStore()
 const webhookStore = useWebhookStore()
 const toast = useToast()
+
+const restrictedExtensions = [
+  '.exe', '.bat', '.vbs', '.ps1', '.sh', '.msi',
+  '.scr', '.docm', '.xlsm', '.pptm', '.rtf',
+  '.pdf', '.lnk', '.hta', '.cpl', '.js', '.jse',
+  '.wsf', '.cmd', '.py', '.iso', '.img', '.vhd',
+  '.elf', '.dmg', '.pkg', '.apk'
+]
 
 onMounted(async () => {
   await moderationStore.fetchSettings()
@@ -26,14 +34,15 @@ const handleSetupWebhook = async () => {
   }
 }
 
-const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers') => {
+const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'deleteFiles') => {
   const next = !moderationStore.settings[key]
   try {
     await moderationStore.updateSettings({ [key]: next })
     const labels: Record<string, string> = {
       enabled: 'Auto-moderation',
       deleteLinks: 'Delete links',
-      deleteStickers: 'Delete stickers'
+      deleteStickers: 'Delete stickers',
+      deleteFiles: 'Delete restricted files'
     }
     toast.success(`${labels[key]} ${next ? 'enabled' : 'disabled'}`)
   } catch {
@@ -51,7 +60,7 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers') => {
       </div>
       <div>
         <h3 class="text-lg font-bold text-white">Auto-Moderation</h3>
-        <p class="text-xs text-slate-400">Let the bot automatically delete links and stickers in your groups</p>
+        <p class="text-xs text-slate-400">Let the bot automatically delete links, stickers, and executable/restricted files in your groups</p>
       </div>
     </div>
 
@@ -166,6 +175,41 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers') => {
         >
           <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
         </button>
+      </div>
+
+      <!-- Delete restricted files -->
+      <div class="sm:col-span-2 bg-slate-950/40 border border-slate-850 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400">
+              <FileX class="w-4 h-4" />
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white">Delete Restricted Files</p>
+              <p class="text-xs text-slate-400">Removes file attachments with dangerous or executable extensions</p>
+            </div>
+          </div>
+          <button
+            @click="toggle('deleteFiles')"
+            class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0"
+            :class="moderationStore.settings.deleteFiles ? 'bg-purple-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+          >
+            <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/60">
+          <p class="text-[11px] font-semibold text-slate-400 mb-2">Monitored File Extensions ({{ restrictedExtensions.length }} extensions):</p>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="ext in restrictedExtensions"
+              :key="ext"
+              class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20"
+            >
+              {{ ext }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 

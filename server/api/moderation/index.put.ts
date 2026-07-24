@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
     if (body.enabled !== undefined) updates.enabled = !!body.enabled
     if (body.deleteLinks !== undefined) updates.deleteLinks = !!body.deleteLinks
     if (body.deleteStickers !== undefined) updates.deleteStickers = !!body.deleteStickers
+    if (body.deleteFiles !== undefined) updates.deleteFiles = !!body.deleteFiles
 
     const settings = await db.saveModerationSettings(updates)
 

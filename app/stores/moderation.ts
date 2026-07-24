@@ -4,6 +4,7 @@ export interface ModerationSettings {
   enabled: boolean
   deleteLinks: boolean
   deleteStickers: boolean
+  deleteFiles: boolean
 }
 
 export const useModerationStore = defineStore('moderation', {
@@ -11,7 +12,8 @@ export const useModerationStore = defineStore('moderation', {
     settings: {
       enabled: false,
       deleteLinks: false,
-      deleteStickers: false
+      deleteStickers: false,
+      deleteFiles: false
     } as ModerationSettings,
     isLoading: false
   }),
