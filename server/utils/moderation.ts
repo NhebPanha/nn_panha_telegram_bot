@@ -47,8 +47,11 @@ export function isSticker(msg: TelegramIncomingMessage): boolean {
 export function hasRestrictedFile(msg: TelegramIncomingMessage): { isRestricted: boolean; fileName: string; ext: string } {
   if (!msg.document) return { isRestricted: false, fileName: '', ext: '' }
   const fileName = msg.document.file_name || ''
-  const lowerName = fileName.toLowerCase()
-  const matched = RESTRICTED_FILE_EXTENSIONS.find(ext => lowerName.endsWith('.' + ext))
+  const lowerName = fileName.toLowerCase().trim()
+  const extParts = lowerName.split('.')
+  const fileExt = extParts.length > 1 ? extParts.pop() : ''
+
+  const matched = RESTRICTED_FILE_EXTENSIONS.find(ext => lowerName.endsWith('.' + ext) || fileExt === ext)
   if (matched) {
     return { isRestricted: true, fileName, ext: `.${matched}` }
   }
@@ -207,7 +210,7 @@ async function moderateMessage(
         ? `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, stickers are not allowed in this group.`
         : reason === 'link'
         ? `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, links are not allowed in this group.`
-        : `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, restricted files${fileDetail} are not allowed in this group.`
+        : `🚫 ជោមេសគេប្រាប់ហើយនិងហាស៎ \n ${mention}, files ${fileDetail ? fileDetail + ' ' : ''}are not allowed in this group.`
     try {
       await sendTelegramMessage(token, chatId, noticeText, 'HTML')
     } catch (notifyErr: any) {

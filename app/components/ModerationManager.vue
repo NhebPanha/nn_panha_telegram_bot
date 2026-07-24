@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useModerationStore } from '../stores/moderation'
 import { useBotStore } from '../stores/bot'
 import { useWebhookStore } from '../stores/webhook'
 import { useToast } from '../composables/useToast'
-import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX } from 'lucide-vue-next'
+import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX, ChevronDown, ChevronUp } from 'lucide-vue-next'
 
 const moderationStore = useModerationStore()
 const botStore = useBotStore()
 const webhookStore = useWebhookStore()
 const toast = useToast()
+
+const showExtensionsList = ref(false)
 
 const restrictedExtensions = [
   '.exe', '.bat', '.vbs', '.ps1', '.sh', '.msi',
@@ -199,8 +201,22 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
         </div>
 
         <div class="pt-2 border-t border-slate-800/60">
-          <p class="text-[11px] font-semibold text-slate-400 mb-2">Monitored File Extensions ({{ restrictedExtensions.length }} extensions):</p>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold text-slate-400">
+              Monitored File Extensions ({{ restrictedExtensions.length }} extensions)
+            </p>
+            <button
+              @click="showExtensionsList = !showExtensionsList"
+              class="text-[11px] font-medium text-slate-400 hover:text-white flex items-center gap-1 transition-colors outline-none cursor-pointer"
+            >
+              <span>{{ showExtensionsList ? 'Close list' : 'View all extensions' }}</span>
+              <ChevronUp v-if="showExtensionsList" class="w-3.5 h-3.5" />
+              <ChevronDown v-else class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <!-- Collapsible Extensions Grid -->
+          <div v-if="showExtensionsList" class="mt-2.5 flex flex-wrap gap-1.5 transition-all">
             <span
               v-for="ext in restrictedExtensions"
               :key="ext"

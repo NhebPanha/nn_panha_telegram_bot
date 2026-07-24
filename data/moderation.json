@@ -1,1 +1,1 @@
-{"enabled":true,"deleteLinks":false,"deleteStickers":false}
+{"enabled":true,"deleteLinks":true,"deleteStickers":true,"deleteFiles":true}
