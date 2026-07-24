@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useModerationStore } from '../stores/moderation'
 import { useBotStore } from '../stores/bot'
 import { useWebhookStore } from '../stores/webhook'
 import { useToast } from '../composables/useToast'
-import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX, ChevronDown, ChevronUp, Check, X } from 'lucide-vue-next'
 
 const moderationStore = useModerationStore()
 const botStore = useBotStore()
 const webhookStore = useWebhookStore()
 const toast = useToast()
 
-const showExtensionsList = ref(false)
+const showExtensionsList = ref(true)
 
 const restrictedExtensions = [
   '.exe', '.bat', '.vbs', '.ps1', '.sh', '.msi',
   '.scr', '.docm', '.xlsm', '.pptm', '.rtf',
   '.pdf', '.lnk', '.hta', '.cpl', '.js', '.jse',
   '.wsf', '.cmd', '.py', '.iso', '.img', '.vhd',
-  '.elf', '.dmg', '.pkg', '.apk'
+  '.elf', '.dmg', '.pkg', '.apk', '.zip', '.rar', '.7z'
 ]
 
 onMounted(async () => {
@@ -51,6 +51,52 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
     toast.error('Failed to update moderation setting')
   }
 }
+
+const isExtensionBlocked = (ext: string) => {
+  const clean = ext.replace(/^\./, '').toLowerCase()
+  const list = moderationStore.settings.blockedExtensions
+  if (!list || !Array.isArray(list) || list.length === 0) {
+    // Default to active if blockedExtensions not set yet
+    return true
+  }
+  return list.includes(clean)
+}
+
+const toggleExtension = async (ext: string) => {
+  const clean = ext.replace(/^\./, '').toLowerCase()
+  const list = moderationStore.settings.blockedExtensions || restrictedExtensions.map(e => e.replace(/^\./, '').toLowerCase())
+  const currentList = [...list]
+  const idx = currentList.indexOf(clean)
+  
+  if (idx > -1) {
+    currentList.splice(idx, 1)
+  } else {
+    currentList.push(clean)
+  }
+
+  try {
+    await moderationStore.updateSettings({ blockedExtensions: currentList })
+    const state = currentList.includes(clean) ? 'blocked (auto-delete)' : 'allowed'
+    toast.success(`Rule for ${ext}: ${state}`)
+  } catch {
+    toast.error(`Failed to update rule for ${ext}`)
+  }
+}
+
+const toggleAllExtensions = async (enable: boolean) => {
+  const allClean = restrictedExtensions.map(e => e.replace(/^\./, '').toLowerCase())
+  const newList = enable ? allClean : []
+  try {
+    await moderationStore.updateSettings({ blockedExtensions: newList })
+    toast.success(enable ? 'All file extension rules enabled' : 'All file extension rules disabled')
+  } catch {
+    toast.error('Failed to update extension rules')
+  }
+}
+
+const activeCount = computed(() => {
+  return restrictedExtensions.filter(ext => isExtensionBlocked(ext)).length
+})
 </script>
 
 <template>
@@ -180,7 +226,7 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
       </div>
 
       <!-- Delete restricted files -->
-      <div class="sm:col-span-2 bg-slate-950/40 border border-slate-850 rounded-xl p-4 space-y-3">
+      <div class="sm:col-span-2 bg-slate-950/40 border border-slate-850 rounded-xl p-4 space-y-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400">
@@ -188,7 +234,7 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
             </div>
             <div>
               <p class="text-sm font-bold text-white">Delete Restricted Files</p>
-              <p class="text-xs text-slate-400">Removes file attachments with dangerous or executable extensions</p>
+              <p class="text-xs text-slate-400">Removes file attachments with dangerous or blocked extensions</p>
             </div>
           </div>
           <button
@@ -200,30 +246,56 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
           </button>
         </div>
 
-        <div class="pt-2 border-t border-slate-800/60">
-          <div class="flex items-center justify-between">
-            <p class="text-[11px] font-semibold text-slate-400">
-              Monitored File Extensions ({{ restrictedExtensions.length }} extensions)
-            </p>
-            <button
-              @click="showExtensionsList = !showExtensionsList"
-              class="text-[11px] font-medium text-slate-400 hover:text-white flex items-center gap-1 transition-colors outline-none cursor-pointer"
-            >
-              <span>{{ showExtensionsList ? 'Close list' : 'View all extensions' }}</span>
-              <ChevronUp v-if="showExtensionsList" class="w-3.5 h-3.5" />
-              <ChevronDown v-else class="w-3.5 h-3.5" />
-            </button>
+        <div class="pt-3 border-t border-slate-800/60 space-y-3" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.deleteFiles }">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <p class="text-[11px] font-semibold text-slate-300">
+                File Extension Rules ({{ activeCount }} / {{ restrictedExtensions.length }} blocked)
+              </p>
+              <span class="text-[10px] text-slate-500 font-mono">(Click extension to toggle ON/OFF)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="toggleAllExtensions(true)"
+                class="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+              >
+                Block All
+              </button>
+              <button
+                @click="toggleAllExtensions(false)"
+                class="px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750 transition-all"
+              >
+                Allow All
+              </button>
+              <button
+                @click="showExtensionsList = !showExtensionsList"
+                class="text-[11px] font-medium text-slate-400 hover:text-white flex items-center gap-1 transition-colors outline-none cursor-pointer ml-1"
+              >
+                <span>{{ showExtensionsList ? 'Close list' : 'View list' }}</span>
+                <ChevronUp v-if="showExtensionsList" class="w-3.5 h-3.5" />
+                <ChevronDown v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          <!-- Collapsible Extensions Grid -->
-          <div v-if="showExtensionsList" class="mt-2.5 flex flex-wrap gap-1.5 transition-all">
-            <span
+          <!-- Interactive File Extension Toggle Pills -->
+          <div v-if="showExtensionsList" class="flex flex-wrap gap-1.5 pt-1">
+            <button
               v-for="ext in restrictedExtensions"
               :key="ext"
-              class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20"
+              @click="toggleExtension(ext)"
+              type="button"
+              class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition-all flex items-center gap-1.5 outline-none cursor-pointer"
+              :class="isExtensionBlocked(ext) 
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 shadow-sm' 
+                : 'bg-slate-900/80 text-slate-500 border border-slate-800 hover:border-slate-700 hover:text-slate-400 opacity-65'"
+              :title="isExtensionBlocked(ext) ? `Click to ALLOW ${ext} files` : `Click to BLOCK ${ext} files`"
             >
-              {{ ext }}
-            </span>
+              <span class="w-1.5 h-1.5 rounded-full" :class="isExtensionBlocked(ext) ? 'bg-rose-400' : 'bg-slate-600'"></span>
+              <span>{{ ext }}</span>
+              <X v-if="isExtensionBlocked(ext)" class="w-2.5 h-2.5 text-rose-400" />
+              <Check v-else class="w-2.5 h-2.5 text-slate-600" />
+            </button>
           </div>
         </div>
       </div>

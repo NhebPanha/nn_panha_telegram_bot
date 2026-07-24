@@ -37,23 +37,36 @@ export function hasLink(msg: TelegramIncomingMessage): boolean {
 export const RESTRICTED_FILE_EXTENSIONS = [
   'exe', 'bat', 'vbs', 'ps1', 'sh', 'msi', 'scr', 'docm', 'xlsm', 'pptm',
   'rtf', 'pdf', 'lnk', 'hta', 'cpl', 'js', 'jse', 'wsf', 'cmd', 'py',
-  'iso', 'img', 'vhd', 'elf', 'dmg', 'pkg', 'apk'
+  'iso', 'img', 'vhd', 'elf', 'dmg', 'pkg', 'apk', 'zip', 'rar', '7z', 'tar', 'gz'
 ]
 
 export function isSticker(msg: TelegramIncomingMessage): boolean {
   return !!msg.sticker
 }
 
-export function hasRestrictedFile(msg: TelegramIncomingMessage): { isRestricted: boolean; fileName: string; ext: string } {
+export function hasRestrictedFile(
+  msg: TelegramIncomingMessage,
+  settings?: ModerationSettings
+): { isRestricted: boolean; fileName: string; ext: string } {
   if (!msg.document) return { isRestricted: false, fileName: '', ext: '' }
   const fileName = msg.document.file_name || ''
   const lowerName = fileName.toLowerCase().trim()
   const extParts = lowerName.split('.')
-  const fileExt = extParts.length > 1 ? extParts.pop() : ''
+  const fileExt = extParts.length > 1 ? extParts.pop() || '' : ''
 
-  const matched = RESTRICTED_FILE_EXTENSIONS.find(ext => lowerName.endsWith('.' + ext) || fileExt === ext)
+  const activeExtensions =
+    settings && Array.isArray(settings.blockedExtensions)
+      ? settings.blockedExtensions
+      : RESTRICTED_FILE_EXTENSIONS
+
+  const matched = activeExtensions.find(ext => {
+    const cleanExt = ext.replace(/^\./, '').toLowerCase()
+    return lowerName.endsWith('.' + cleanExt) || fileExt === cleanExt
+  })
+
   if (matched) {
-    return { isRestricted: true, fileName, ext: `.${matched}` }
+    const cleanExt = matched.replace(/^\./, '')
+    return { isRestricted: true, fileName, ext: `.${cleanExt}` }
   }
   return { isRestricted: false, fileName: '', ext: '' }
 }
@@ -188,7 +201,7 @@ async function moderateMessage(
   } else if (settings.deleteLinks && hasLink(msg)) {
     reason = 'link'
   } else if (settings.deleteFiles) {
-    const fileCheck = hasRestrictedFile(msg)
+    const fileCheck = hasRestrictedFile(msg, settings)
     if (fileCheck.isRestricted) {
       reason = 'file'
       fileDetail = fileCheck.ext ? ` (${fileCheck.ext})` : ''

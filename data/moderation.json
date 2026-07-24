@@ -1,1 +1,11 @@
-{"enabled":true,"deleteLinks":true,"deleteStickers":true,"deleteFiles":true}
+{
+  "enabled": true,
+  "deleteLinks": true,
+  "deleteStickers": true,
+  "deleteFiles": true,
+  "blockedExtensions": [
+    "exe", "bat", "vbs", "ps1", "sh", "msi", "scr", "docm", "xlsm", "pptm",
+    "rtf", "pdf", "lnk", "hta", "cpl", "js", "jse", "wsf", "cmd", "py",
+    "iso", "img", "vhd", "elf", "dmg", "pkg", "apk", "zip", "rar", "7z"
+  ]
+}

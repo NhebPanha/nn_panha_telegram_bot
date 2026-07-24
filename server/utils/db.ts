@@ -66,6 +66,7 @@ export interface ModerationSettings {
   deleteLinks: boolean
   deleteStickers: boolean
   deleteFiles: boolean
+  blockedExtensions?: string[]
 }
 
 // A user the bot has observed in a chat. The Bot API cannot list a group's
@@ -386,7 +387,12 @@ export const db = {
       enabled: false,
       deleteLinks: false,
       deleteStickers: false,
-      deleteFiles: false
+      deleteFiles: false,
+      blockedExtensions: [
+        'exe', 'bat', 'vbs', 'ps1', 'sh', 'msi', 'scr', 'docm', 'xlsm', 'pptm',
+        'rtf', 'pdf', 'lnk', 'hta', 'cpl', 'js', 'jse', 'wsf', 'cmd', 'py',
+        'iso', 'img', 'vhd', 'elf', 'dmg', 'pkg', 'apk', 'zip', 'rar', '7z'
+      ]
     })
   },
 
