@@ -150,7 +150,7 @@ async function writeJsonFile<T>(key: string, data: T): Promise<void> {
 async function removeJsonFile(key: string): Promise<void> {
   try {
     await store().removeItem(key)
-  } catch {}
+  } catch { }
 }
 
 export const db = {
@@ -389,9 +389,15 @@ export const db = {
       deleteStickers: false,
       deleteFiles: false,
       blockedExtensions: [
-        'exe', 'bat', 'vbs', 'ps1', 'sh', 'msi', 'scr', 'docm', 'xlsm', 'pptm',
-        'rtf', 'pdf', 'lnk', 'hta', 'cpl', 'js', 'jse', 'wsf', 'cmd', 'py',
-        'iso', 'img', 'vhd', 'elf', 'dmg', 'pkg', 'apk', 'zip', 'rar', '7z'
+        'exe', 'bat', 'cmd', 'com', 'scr', 'pif', 'gadget', 'msi', 'msp', 'mst',
+        'ps1', 'psm1', 'psd1', 'vbs', 'vbe', 'vb', 'js', 'jse', 'ws', 'wsf', 'wsc',
+        'hta', 'reg', 'inf', 'scf', 'sh', 'bash', 'zsh', 'ksh', 'csh', 'fish',
+        'py', 'pyw', 'pl', 'rb', 'php', 'cgi', 'jar', 'class', 'dll', 'ocx', 'sys',
+        'drv', 'cpl', 'lnk', 'url', 'docm', 'dotm', 'xlsm', 'xltm', 'xlam', 'pptm',
+        'ppam', 'potm', 'sldm', 'chm', 'hlp', 'apk', 'aab', 'ipa', 'app', 'dmg',
+        'pkg', 'deb', 'rpm', 'snap', 'flatpak', 'iso', 'img', 'vhd', 'vhdx', 'vmdk',
+        'ova', 'ovf', 'elf', 'bin', 'run', 'out', 'zip', 'rar', '7z', 'tar', 'gz',
+        'tgz', 'bz2', 'xz', 'cab', 'torrent', 'pdf', 'rtf'
       ]
     })
   },
