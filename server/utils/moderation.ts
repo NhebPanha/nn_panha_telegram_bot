@@ -54,8 +54,10 @@ export function hasRestrictedFile(
   msg: TelegramIncomingMessage,
   settings?: ModerationSettings
 ): { isRestricted: boolean; fileName: string; ext: string } {
-  if (!msg.document) return { isRestricted: false, fileName: '', ext: '' }
-  const fileName = msg.document.file_name || ''
+  const doc = msg.document || msg.audio || msg.video || msg.animation || msg.voice
+  if (!doc) return { isRestricted: false, fileName: '', ext: '' }
+
+  const fileName = ('file_name' in doc && doc.file_name) ? doc.file_name : ('mime_type' in doc && doc.mime_type ? doc.mime_type : 'file')
   const lowerName = fileName.toLowerCase().trim()
   const extParts = lowerName.split('.')
   const fileExt = extParts.length > 1 ? extParts.pop() || '' : ''
@@ -65,13 +67,23 @@ export function hasRestrictedFile(
       ? settings.blockedExtensions
       : RESTRICTED_FILE_EXTENSIONS
 
+  // Wildcard '*' or 'all' blocks any file sent
+  const blockAll = activeExtensions.some(ext => {
+    const clean = ext.replace(/^\./, '').toLowerCase().trim()
+    return clean === '*' || clean === 'all'
+  })
+
+  if (blockAll) {
+    return { isRestricted: true, fileName, ext: fileExt ? `.${fileExt}` : '' }
+  }
+
   const matched = activeExtensions.find(ext => {
-    const cleanExt = ext.replace(/^\./, '').toLowerCase()
+    const cleanExt = ext.replace(/^\./, '').toLowerCase().trim()
     return lowerName.endsWith('.' + cleanExt) || fileExt === cleanExt
   })
 
   if (matched) {
-    const cleanExt = matched.replace(/^\./, '')
+    const cleanExt = matched.replace(/^\./, '').trim()
     return { isRestricted: true, fileName, ext: `.${cleanExt}` }
   }
   return { isRestricted: false, fileName: '', ext: '' }
