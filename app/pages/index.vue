@@ -27,16 +27,22 @@ const tabs = [
         </p>
       </div>
 
-      <nav class="flex bg-slate-900/60 border border-slate-850 p-1 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
+      <nav class="flex items-center bg-slate-900/80 backdrop-blur-xl border border-slate-800/90 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar shadow-lg shadow-black/40 ring-1 ring-white/5 gap-1">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="activeTab = tab.id"
-          class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap"
-          :class="activeTab === tab.id ? 'bg-purple-600 text-white shadow shadow-purple-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'"
+          class="group flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all duration-200 whitespace-nowrap select-none shrink-0"
+          :class="activeTab === tab.id 
+            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/25 ring-1 ring-white/20 font-bold scale-[1.02]' 
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 active:scale-95'"
         >
-          <component :is="tab.icon" class="w-4.5 h-4.5" />
-          {{ tab.name }}
+          <component 
+            :is="tab.icon" 
+            class="w-4 h-4 transition-all duration-200" 
+            :class="activeTab === tab.id ? 'text-white scale-110' : 'text-slate-400 group-hover:text-slate-200'"
+          />
+          <span>{{ tab.name }}</span>
         </button>
       </nav>
     </div>
