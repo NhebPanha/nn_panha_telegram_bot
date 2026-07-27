@@ -340,6 +340,19 @@ export async function runScheduledBroadcast(now = new Date(), options: { force?:
       `${minutesLate > 0 ? ` (${minutesLate}m late)` : ''}. Dispatching broadcasts...`
     )
 
+    // Restrict this schedule to its selected target groups. An empty/undefined
+    // list means "all active groups" (the original broadcast behaviour).
+    const targetIds = schedule.targetGroupIds
+    const scheduleGroups =
+      targetIds && targetIds.length > 0
+        ? activeGroups.filter(g => targetIds.includes(g.id))
+        : activeGroups
+
+    if (scheduleGroups.length === 0) {
+      console.log(`[Cron] Schedule "${schedule.title}" has no active target groups, skipping.`)
+      continue
+    }
+
     // Claim the slot before sending. A tick that overruns into the next minute
     // would otherwise let the following tick dispatch the same slot again.
     //
@@ -352,7 +365,7 @@ export async function runScheduledBroadcast(now = new Date(), options: { force?:
       active: schedule.type === 'one_time' ? false : schedule.active
     })
 
-    await dispatchSchedule(schedule, activeGroups, token)
+    await dispatchSchedule(schedule, scheduleGroups, token)
     dispatched++
   }
 

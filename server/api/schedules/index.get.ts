@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
       messageType: s.messageType || 'text',
       mediaUrl: s.mediaUrl || '',
       parseMode: s.parseMode || 'HTML',
+      targetGroupIds: s.targetGroupIds || [],
       isActive: s.active,
       createdAt: s.createdAt || new Date().toISOString(),
       lastExecutedAt: s.lastExecutedAt

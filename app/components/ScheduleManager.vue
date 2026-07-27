@@ -2,16 +2,19 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSchedulesStore, type Schedule } from '../stores/schedules'
 import { useBotStore } from '../stores/bot'
+import { useGroupsStore } from '../stores/groups'
 import { useToast } from '../composables/useToast'
-import { CalendarRange, Plus, Trash2, Edit2, Clock, RefreshCw, FileText, Image, Video, File, Globe, AlertCircle } from 'lucide-vue-next'
+import { CalendarRange, Plus, Trash2, Edit2, Clock, RefreshCw, FileText, Image, Video, File, Globe, AlertCircle, Users } from 'lucide-vue-next'
 
 const schedulesStore = useSchedulesStore()
 const botStore = useBotStore()
+const groupsStore = useGroupsStore()
 const toast = useToast()
 
 onMounted(async () => {
   await schedulesStore.fetchSchedules()
   await botStore.fetchBot()
+  await groupsStore.fetchGroups()
 })
 
 const showModal = ref(false)
@@ -29,6 +32,29 @@ const formMessage = ref('')
 const formMessageType = ref<'text' | 'photo' | 'video' | 'document'>('text')
 const formMediaUrl = ref('')
 const formParseMode = ref<'HTML' | 'MarkdownV2'>('HTML')
+// Empty array = send to ALL active groups; otherwise only the selected group IDs
+const formTargetGroupIds = ref<number[]>([])
+
+const toggleTargetGroup = (groupId: number) => {
+  const i = formTargetGroupIds.value.indexOf(groupId)
+  if (i === -1) formTargetGroupIds.value.push(groupId)
+  else formTargetGroupIds.value.splice(i, 1)
+}
+
+const selectAllGroups = () => {
+  formTargetGroupIds.value = []
+}
+
+// Human-readable target label for a schedule card
+const targetLabel = (s: Schedule) => {
+  const ids = s.targetGroupIds || []
+  if (ids.length === 0) return 'All groups'
+  if (ids.length === 1) {
+    const g = groupsStore.groups.find(gr => Number(gr.id) === ids[0])
+    return g ? g.name : '1 group'
+  }
+  return `${ids.length} groups`
+}
 
 // Key timezone list
 const timezones = [
@@ -63,6 +89,7 @@ const openAddModal = () => {
   formMessageType.value = 'text'
   formMediaUrl.value = ''
   formParseMode.value = 'HTML'
+  formTargetGroupIds.value = []
   showModal.value = true
 }
 
@@ -79,6 +106,7 @@ const openEditModal = (schedule: any) => {
   formMessageType.value = schedule.messageType || 'text'
   formMediaUrl.value = schedule.mediaUrl || ''
   formParseMode.value = schedule.parseMode || 'HTML'
+  formTargetGroupIds.value = Array.isArray(schedule.targetGroupIds) ? [...schedule.targetGroupIds] : []
   showModal.value = true
 }
 
@@ -100,7 +128,8 @@ const handleSubmit = async () => {
     message: formMessage.value.trim(),
     messageType: formMessageType.value,
     mediaUrl: formMessageType.value !== 'text' ? formMediaUrl.value.trim() : '',
-    parseMode: formParseMode.value
+    parseMode: formParseMode.value,
+    targetGroupIds: [...formTargetGroupIds.value]
   }
 
   if (formType.value === 'weekly') {
@@ -264,6 +293,10 @@ const getMsgTypeIcon = (type: string) => {
             <span class="inline-flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-mono">
               <Globe class="w-3 h-3" />
               {{ schedule.timezone }}
+            </span>
+            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+              <Users class="w-3 h-3" />
+              {{ targetLabel(schedule) }}
             </span>
           </div>
 
@@ -443,6 +476,62 @@ const getMsgTypeIcon = (type: string) => {
               placeholder="https://example.com/image.png"
               class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none font-mono"
             />
+          </div>
+
+          <!-- Target Groups -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Send To</label>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 max-h-44 overflow-y-auto space-y-1">
+              <!-- All groups option -->
+              <button
+                type="button"
+                @click="selectAllGroups"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors"
+                :class="formTargetGroupIds.length === 0 ? 'bg-purple-600/15 border border-purple-500/30' : 'hover:bg-slate-800/50 border border-transparent'"
+              >
+                <span
+                  class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                  :class="formTargetGroupIds.length === 0 ? 'border-purple-500' : 'border-slate-600'"
+                >
+                  <span v-if="formTargetGroupIds.length === 0" class="w-2 h-2 rounded-full bg-purple-500" />
+                </span>
+                <Users class="w-3.5 h-3.5 text-slate-400" />
+                <span class="text-sm text-white font-medium">All active groups</span>
+              </button>
+
+              <div v-if="groupsStore.groups.length > 0" class="h-px bg-slate-800 my-1"></div>
+
+              <!-- Per-group checkboxes -->
+              <button
+                v-for="g in groupsStore.groups"
+                :key="g.id"
+                type="button"
+                @click="toggleTargetGroup(Number(g.id))"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors"
+                :class="formTargetGroupIds.includes(Number(g.id)) ? 'bg-slate-800/60' : 'hover:bg-slate-800/40'"
+              >
+                <span
+                  class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center"
+                  :class="formTargetGroupIds.includes(Number(g.id)) ? 'border-purple-500 bg-purple-500' : 'border-slate-600'"
+                >
+                  <svg v-if="formTargetGroupIds.includes(Number(g.id))" class="w-2.5 h-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 011.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm text-white truncate">{{ g.name }}</p>
+                  <p class="text-[10px] text-slate-500 font-mono truncate">{{ g.chatId }}</p>
+                </div>
+                <span v-if="!g.isActive" class="text-[9px] text-slate-500 uppercase font-bold">off</span>
+              </button>
+
+              <p v-if="groupsStore.groups.length === 0" class="text-xs text-slate-500 text-center py-3">
+                No groups yet. Add targets in the Groups tab.
+              </p>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1.5">
+              {{ formTargetGroupIds.length === 0 ? 'This schedule will broadcast to every active group.' : `Sends only to ${formTargetGroupIds.length} selected group(s).` }}
+            </p>
           </div>
 
           <!-- Text Message Box -->

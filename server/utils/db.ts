@@ -57,6 +57,9 @@ export interface JSONSchedule {
   mediaUrl?: string
   parseMode: 'HTML' | 'MarkdownV2'
   active: boolean
+  // Group IDs this schedule sends to. Empty/undefined = all active groups
+  // (keeps older schedules broadcasting to everyone).
+  targetGroupIds?: number[]
   createdAt: string
   lastExecutedAt?: string
 }
@@ -316,7 +319,7 @@ export const db = {
     messageType: 'text' | 'photo' | 'video' | 'document' = 'text',
     mediaUrl = '',
     parseMode: 'HTML' | 'MarkdownV2' = 'HTML',
-    options?: { dayOfWeek?: number; dayOfMonth?: number },
+    options?: { dayOfWeek?: number; dayOfMonth?: number; targetGroupIds?: number[] },
     active = true
   ): Promise<JSONSchedule> {
     const schedules = await this.getSchedules()
@@ -334,6 +337,7 @@ export const db = {
       active,
       dayOfWeek: options?.dayOfWeek,
       dayOfMonth: options?.dayOfMonth,
+      targetGroupIds: options?.targetGroupIds,
       createdAt: new Date().toISOString()
     }
     schedules.push(newSchedule)

@@ -12,6 +12,7 @@ export interface Schedule {
   messageType: 'text' | 'photo' | 'video' | 'document'
   mediaUrl?: string
   parseMode: 'HTML' | 'MarkdownV2'
+  targetGroupIds?: number[]
   isActive: boolean
   createdAt: string
   lastExecutedAt?: string

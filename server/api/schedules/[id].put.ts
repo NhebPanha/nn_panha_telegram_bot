@@ -44,6 +44,26 @@ export default defineEventHandler(async (event) => {
     if (body.parseMode !== undefined) updates.parseMode = body.parseMode
     if (body.isActive !== undefined) updates.active = !!body.isActive
 
+    // Target groups (empty array = broadcast to all active groups)
+    if (body.targetGroupIds !== undefined) {
+      if (Array.isArray(body.targetGroupIds) && body.targetGroupIds.length > 0) {
+        const groups = await db.getGroups()
+        const validIds = new Set(groups.map(g => g.id))
+        const cleaned = body.targetGroupIds
+          .map((v: any) => Number(v))
+          .filter((n: number) => !isNaN(n) && validIds.has(n))
+        if (cleaned.length === 0) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'None of the selected target groups exist'
+          })
+        }
+        updates.targetGroupIds = cleaned
+      } else {
+        updates.targetGroupIds = []
+      }
+    }
+
     // Timezone
     if (body.timezone !== undefined) {
       const timezone = body.timezone
@@ -133,6 +153,7 @@ export default defineEventHandler(async (event) => {
         messageType: updated.messageType,
         mediaUrl: updated.mediaUrl,
         parseMode: updated.parseMode,
+        targetGroupIds: updated.targetGroupIds || [],
         isActive: updated.active,
         createdAt: updated.createdAt
       }

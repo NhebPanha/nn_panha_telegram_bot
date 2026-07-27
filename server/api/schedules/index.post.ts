@@ -94,7 +94,24 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 5. Create schedule record
+    // 5. Resolve optional target groups (empty = broadcast to all active groups)
+    let targetGroupIds: number[] | undefined = undefined
+    if (Array.isArray(body.targetGroupIds) && body.targetGroupIds.length > 0) {
+      const groups = await db.getGroups()
+      const validIds = new Set(groups.map(g => g.id))
+      targetGroupIds = body.targetGroupIds
+        .map((v: any) => Number(v))
+        .filter((n: number) => !isNaN(n) && validIds.has(n))
+
+      if (targetGroupIds!.length === 0) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'None of the selected target groups exist'
+        })
+      }
+    }
+
+    // 6. Create schedule record
     const schedule = await db.createSchedule(
       title,
       message,
@@ -104,7 +121,7 @@ export default defineEventHandler(async (event) => {
       messageType,
       mediaUrl,
       parseMode,
-      { dayOfWeek, dayOfMonth },
+      { dayOfWeek, dayOfMonth, targetGroupIds },
       isActive
     )
 
@@ -122,6 +139,7 @@ export default defineEventHandler(async (event) => {
         messageType: schedule.messageType,
         mediaUrl: schedule.mediaUrl,
         parseMode: schedule.parseMode,
+        targetGroupIds: schedule.targetGroupIds || [],
         isActive: schedule.active,
         createdAt: schedule.createdAt
       }
