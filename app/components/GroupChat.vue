@@ -53,6 +53,18 @@ const cancelReply = () => {
   replyingTo.value = null
 }
 
+const handleClearChat = async () => {
+  if (!activeGroupId.value || !activeGroup.value) return
+  if (!confirm(`Clear the chat history for "${activeGroup.value.name}"?\n\nThis removes the stored conversation from the dashboard. It cannot be undone. (Messages already delivered in Telegram are not affected.)`)) return
+  try {
+    const res = await chatStore.clearChat(activeGroupId.value)
+    replyingTo.value = null
+    toast.success(`Chat cleared (${res.removed} messages removed)`)
+  } catch (error: any) {
+    toast.error(error.statusMessage || 'Failed to clear chat')
+  }
+}
+
 const handleDelete = async (msg: ChatMessage) => {
   if (!msg.messageId || !activeGroupId.value) return
   if (!confirm('Delete this message from the group? This cannot be undone.')) return
@@ -204,6 +216,14 @@ onBeforeUnmount(() => {
             </div>
             <button @click="refresh" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800" title="Refresh">
               <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': chatStore.isLoadingMessages }" />
+            </button>
+            <button
+              @click="handleClearChat"
+              :disabled="chatStore.messages.length === 0"
+              class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:bg-transparent"
+              title="Clear chat history"
+            >
+              <Trash2 class="w-4 h-4" />
             </button>
             <button
               @click="showMembers = !showMembers"

@@ -131,6 +131,17 @@ export const useChatStore = defineStore('chat', {
       return data
     },
 
+    async clearChat(groupId: string) {
+      const data = await $fetch<{ success: boolean; removed: number }>(
+        `/api/groups/${groupId}/messages`,
+        { method: 'DELETE' }
+      )
+      if (data.success) {
+        this.messages = []
+      }
+      return data
+    },
+
     reset() {
       this.messages = []
       this.members = []
