@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import { useAuthStore } from '../stores/auth'
 import { useTheme } from '../composables/useTheme'
-import { Send, Github, Sun, Moon, LogOut, User } from 'lucide-vue-next'
+import { Github, Sun, Moon, LogOut, User } from 'lucide-vue-next'
 
 const botStore = useBotStore()
 const authStore = useAuthStore()
@@ -23,8 +23,8 @@ onMounted(() => {
     <header class="relative z-30 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
-            <Send class="w-4 h-4 text-white transform rotate-[15deg] -translate-x-0.5 -translate-y-0.5" />
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/25 overflow-hidden">
+            <img src="/logo.png" alt="TeleFlow logo" class="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 class="text-base font-black tracking-tight text-white leading-none">TELEFLOW</h1>
