@@ -105,10 +105,50 @@ function mentionsBot(msg: TelegramIncomingMessage, botUserId: number, botUsernam
 
 // A short label for a replied-to message, used in logs and notices.
 function summariseMessage(msg: TelegramIncomingMessage): string {
-  if (msg.sticker) return `sticker ${msg.sticker.emoji || ''}`.trim()
-  if (msg.document) return `file "${msg.document.file_name || 'document'}"`
+  if (msg.sticker) return `${msg.sticker.emoji || ''} Sticker`.trim()
+  if (msg.photo) return msg.caption || '📷 Photo'
+  if (msg.video) return msg.caption || '🎬 Video'
+  if (msg.animation) return msg.caption || '🎞️ GIF'
+  if (msg.voice) return '🎤 Voice message'
+  if (msg.audio) return msg.caption || '🎵 Audio'
+  if (msg.document) return msg.caption || `📎 ${msg.document.file_name || 'Document'}`
   const text = msg.text || msg.caption || '[media]'
   return text.length > 40 ? `${text.slice(0, 40)}…` : text
+}
+
+// Pull a renderable media descriptor out of a message, if any.
+function extractMedia(msg: TelegramIncomingMessage): Partial<{
+  mediaType: 'photo' | 'sticker' | 'video' | 'animation' | 'document' | 'audio' | 'voice'
+  mediaFileId: string
+  mediaMime: string
+  mediaEmoji: string
+  mediaFileName: string
+  stickerFormat: 'static' | 'animated' | 'video'
+}> {
+  if (msg.sticker) {
+    return {
+      mediaType: 'sticker',
+      mediaFileId: msg.sticker.file_id,
+      mediaEmoji: msg.sticker.emoji,
+      stickerFormat: msg.sticker.is_video ? 'video' : msg.sticker.is_animated ? 'animated' : 'static'
+    }
+  }
+  if (msg.photo && msg.photo.length > 0) {
+    return { mediaType: 'photo', mediaFileId: msg.photo[msg.photo.length - 1].file_id }
+  }
+  if (msg.video) return { mediaType: 'video', mediaFileId: msg.video.file_id, mediaMime: msg.video.mime_type }
+  if (msg.animation) return { mediaType: 'animation', mediaFileId: msg.animation.file_id, mediaMime: msg.animation.mime_type }
+  if (msg.voice) return { mediaType: 'voice', mediaFileId: msg.voice.file_id, mediaMime: msg.voice.mime_type }
+  if (msg.audio) return { mediaType: 'audio', mediaFileId: msg.audio.file_id, mediaMime: msg.audio.mime_type }
+  if (msg.document) {
+    return {
+      mediaType: 'document',
+      mediaFileId: msg.document.file_id,
+      mediaMime: msg.document.mime_type,
+      mediaFileName: msg.document.file_name
+    }
+  }
+  return {}
 }
 
 /**
@@ -274,10 +314,10 @@ async function recordActivity(msg: TelegramIncomingMessage) {
     await db.recordMember(chatId, msg.from, true)
   }
 
-  const text =
-    msg.text ||
-    msg.caption ||
-    (msg.document ? `[file: ${msg.document.file_name || 'document'}]` : msg.sticker ? `[sticker ${msg.sticker.emoji || ''}]` : '[media]')
+  const media = extractMedia(msg)
+  // Media messages keep their caption as text (empty for stickers) and render
+  // the attachment; text-only messages keep their text.
+  const text = msg.text || msg.caption || (media.mediaType ? '' : '[media]')
   const fromName =
     [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') ||
     (msg.from?.username ? `@${msg.from.username}` : 'Unknown')
@@ -301,7 +341,8 @@ async function recordActivity(msg: TelegramIncomingMessage) {
     date: new Date((msg.date || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
     replyToMessageId: replied?.message_id ?? null,
     replyToName: repliedName,
-    replyToText: replied ? summariseMessage(replied) : undefined
+    replyToText: replied ? summariseMessage(replied) : undefined,
+    ...media
   })
 }
 

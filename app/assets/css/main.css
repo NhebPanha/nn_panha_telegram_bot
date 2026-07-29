@@ -73,3 +73,47 @@ html.theme-light code { color: #7c3aed; }
 .no-scrollbar::-webkit-scrollbar {
   display: none;            /* Chrome, Safari, Edge */
 }
+
+/* ============================================================
+   CHAT UI — theme-aware surfaces & bubbles
+   ============================================================ */
+
+/* Conversation canvas: subtle depth in both themes */
+.chat-canvas {
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
+    rgba(2, 6, 23, 0.25);
+}
+html.theme-light .chat-canvas {
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
+    #f1f5f9;
+}
+
+/* Incoming bubble */
+.chat-bubble-in {
+  background-color: rgba(30, 41, 59, 0.9); /* slate-800 */
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+}
+html.theme-light .chat-bubble-in {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e6ebf2;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+/* Outgoing bubble (bot / dashboard) — consistent brand gradient both themes */
+.chat-bubble-out {
+  background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.5);
+}
+
+/* Custom slim scrollbar for chat panes (kept, unlike the hidden nav bar) */
+.chat-canvas::-webkit-scrollbar { width: 8px; }
+.chat-canvas::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+.chat-canvas::-webkit-scrollbar-track { background: transparent; }

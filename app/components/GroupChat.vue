@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
 import { useToast } from '../composables/useToast'
-import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2 } from 'lucide-vue-next'
+import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
@@ -126,6 +126,9 @@ const formatTime = (iso: string) => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+// Serve Telegram attachments through the authenticated media proxy.
+const mediaSrc = (fileId?: string) => (fileId ? `/api/media/${fileId}` : '')
+
 const formatSeen = (iso: string) => new Date(iso).toLocaleString()
 
 watch(() => chatStore.messages.length, scrollToBottom)
@@ -236,7 +239,7 @@ onBeforeUnmount(() => {
           </header>
 
           <!-- Messages -->
-          <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/20">
+          <div class="flex-1 overflow-y-auto p-4 space-y-2.5 chat-canvas">
             <div v-if="chatStore.isLoadingMessages && chatStore.messages.length === 0" class="flex justify-center py-8">
               <RefreshCw class="w-6 h-6 text-purple-400 animate-spin" />
             </div>
@@ -254,29 +257,91 @@ onBeforeUnmount(() => {
                 {{ initials(msg.fromName) }}
               </div>
               <div
-                class="max-w-[75%] rounded-2xl px-3.5 py-2 text-sm"
-                :class="msg.direction === 'out'
-                  ? 'bg-purple-600 text-white rounded-tr-sm'
-                  : 'bg-slate-800/80 text-slate-100 rounded-tl-sm'"
+                class="max-w-[78%] text-sm"
+                :class="msg.mediaType === 'sticker'
+                  ? 'bg-transparent'
+                  : (msg.direction === 'out'
+                      ? 'chat-bubble-out rounded-2xl rounded-tr-md px-3.5 py-2 shadow-sm'
+                      : 'chat-bubble-in rounded-2xl rounded-tl-md px-3.5 py-2 shadow-sm')"
               >
                 <p
                   v-if="msg.direction === 'in'"
-                  class="text-[11px] font-semibold mb-0.5"
-                  :class="msg.isBot ? 'text-cyan-400' : 'text-purple-300'"
+                  class="text-[11px] font-bold mb-0.5"
+                  :class="msg.isBot ? 'text-cyan-500' : 'text-purple-400'"
                 >
                   {{ msg.fromName }}<span v-if="msg.isBot"> 🤖</span>
                 </p>
+
                 <!-- Reply context -->
                 <div
                   v-if="msg.replyToMessageId"
-                  class="mb-1 pl-2 border-l-2 rounded-sm text-[11px] leading-tight"
+                  class="mb-1.5 pl-2 py-0.5 border-l-2 rounded-sm text-[11px] leading-tight"
                   :class="msg.direction === 'out' ? 'border-white/50' : 'border-purple-400/60'"
                 >
                   <span class="font-semibold opacity-90">{{ msg.replyToName || 'Reply' }}</span>
-                  <span class="block opacity-60 truncate max-w-[200px]">{{ msg.replyToText }}</span>
+                  <span class="block opacity-60 truncate max-w-[220px]">{{ msg.replyToText }}</span>
                 </div>
-                <p class="whitespace-pre-wrap break-words">{{ msg.text }}</p>
-                <p class="text-[9px] mt-1 opacity-60 text-right">{{ formatTime(msg.date) }}</p>
+
+                <!-- Media attachment -->
+                <div v-if="msg.mediaType" :class="msg.text ? 'mb-1.5' : ''">
+                  <!-- Photo -->
+                  <a v-if="msg.mediaType === 'photo'" :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener">
+                    <img :src="mediaSrc(msg.mediaFileId)" loading="lazy" class="rounded-xl max-h-72 w-auto object-cover cursor-zoom-in" />
+                  </a>
+                  <!-- Static sticker (webp) -->
+                  <img
+                    v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'static'"
+                    :src="mediaSrc(msg.mediaFileId)" loading="lazy"
+                    class="w-32 h-32 object-contain drop-shadow"
+                  />
+                  <!-- Video sticker (webm) -->
+                  <video
+                    v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'video'"
+                    :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
+                    class="w-32 h-32 object-contain drop-shadow"
+                  ></video>
+                  <!-- Animated sticker (.tgs / Lottie — not renderable in-browser) -->
+                  <div v-else-if="msg.mediaType === 'sticker'" class="w-24 h-24 flex items-center justify-center text-6xl">
+                    {{ msg.mediaEmoji || '🎯' }}
+                  </div>
+                  <!-- Video -->
+                  <video
+                    v-else-if="msg.mediaType === 'video'"
+                    :src="mediaSrc(msg.mediaFileId)" controls preload="metadata"
+                    class="rounded-xl max-h-72 max-w-full"
+                  ></video>
+                  <!-- Animation / GIF -->
+                  <video
+                    v-else-if="msg.mediaType === 'animation'"
+                    :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
+                    class="rounded-xl max-h-72 max-w-full"
+                  ></video>
+                  <!-- Voice / Audio -->
+                  <audio
+                    v-else-if="msg.mediaType === 'voice' || msg.mediaType === 'audio'"
+                    :src="mediaSrc(msg.mediaFileId)" controls
+                    class="max-w-[240px] h-9"
+                  ></audio>
+                  <!-- Document / File -->
+                  <a
+                    v-else-if="msg.mediaType === 'document'"
+                    :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 max-w-[240px] transition-colors"
+                    :class="msg.direction === 'out' ? 'bg-white/15 hover:bg-white/25' : 'bg-black/20 hover:bg-black/30'"
+                  >
+                    <File class="w-5 h-5 flex-shrink-0 opacity-80" />
+                    <span class="truncate flex-1 text-xs font-medium">{{ msg.mediaFileName || 'Document' }}</span>
+                    <Download class="w-4 h-4 flex-shrink-0 opacity-70" />
+                  </a>
+                </div>
+
+                <p v-if="msg.text" class="whitespace-pre-wrap break-words">{{ msg.text }}</p>
+                <p
+                  class="text-[9px] mt-1 opacity-60 text-right"
+                  :class="msg.mediaType === 'sticker' ? 'text-slate-500' : ''"
+                >
+                  {{ formatTime(msg.date) }}
+                </p>
               </div>
               <!-- Message actions -->
               <div class="self-center flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">

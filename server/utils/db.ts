@@ -103,6 +103,13 @@ export interface JSONChatMessage {
   replyToMessageId?: number | null
   replyToName?: string
   replyToText?: string
+  // Media attachment (photo/sticker/video/etc.), rendered via /api/media/<fileId>
+  mediaType?: 'photo' | 'sticker' | 'video' | 'animation' | 'document' | 'audio' | 'voice'
+  mediaFileId?: string
+  mediaMime?: string
+  mediaEmoji?: string
+  mediaFileName?: string
+  stickerFormat?: 'static' | 'animated' | 'video'
 }
 
 export interface JSONLog {

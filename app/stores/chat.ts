@@ -27,6 +27,12 @@ export interface ChatMessage {
   replyToMessageId?: number | null
   replyToName?: string
   replyToText?: string
+  mediaType?: 'photo' | 'sticker' | 'video' | 'animation' | 'document' | 'audio' | 'voice'
+  mediaFileId?: string
+  mediaMime?: string
+  mediaEmoji?: string
+  mediaFileName?: string
+  stickerFormat?: 'static' | 'animated' | 'video'
 }
 
 export interface ReplyTarget {

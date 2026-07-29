@@ -57,7 +57,16 @@ export interface TelegramIncomingMessage {
     file_id: string
     emoji?: string
     set_name?: string
+    is_animated?: boolean
+    is_video?: boolean
+    width?: number
+    height?: number
   }
+  photo?: Array<{ file_id: string; file_unique_id: string; width: number; height: number }>
+  video?: { file_id: string; mime_type?: string; width?: number; height?: number; duration?: number }
+  animation?: { file_id: string; mime_type?: string; file_name?: string; width?: number; height?: number }
+  audio?: { file_id: string; mime_type?: string; title?: string; performer?: string }
+  voice?: { file_id: string; mime_type?: string; duration?: number }
   document?: TelegramDocument
   reply_to_message?: TelegramIncomingMessage
 }
@@ -192,6 +201,26 @@ export async function getChatAdministrators(token: string, chatId: string): Prom
     const message = error.data?.description || error.message || 'Unknown error'
     throw new Error(`Telegram getChatAdministrators Failed: ${message}`)
   }
+}
+
+export interface TelegramFileInfo {
+  file_id: string
+  file_unique_id: string
+  file_size?: number
+  file_path: string
+}
+
+// Resolve a file_id to a downloadable file_path via getFile. The actual bytes
+// then live at https://api.telegram.org/file/bot<token>/<file_path>.
+export async function getTelegramFile(token: string, fileId: string): Promise<TelegramFileInfo> {
+  const response = await $fetch<{ ok: boolean; result: TelegramFileInfo; description?: string }>(
+    `https://api.telegram.org/bot${token}/getFile`,
+    { method: 'POST', body: { file_id: fileId } }
+  )
+  if (!response.ok || !response.result?.file_path) {
+    throw new Error(response.description || 'Telegram getFile responded with ok: false')
+  }
+  return response.result
 }
 
 // Look up a single member's status in a chat (used to authorize commands).
