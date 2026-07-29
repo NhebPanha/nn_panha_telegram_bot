@@ -6,6 +6,10 @@ export default defineNuxtConfig({
   // Apply the saved theme before first paint to avoid a flash of dark mode
   app: {
     head: {
+      title: 'TeleFlow — Bot Management',
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/logo.png' }
+      ],
       script: [
         {
           innerHTML:
