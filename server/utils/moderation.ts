@@ -380,14 +380,23 @@ async function maybeAiReply(
   const settings = await db.getAiSettings()
   if (!settings.enabled || !settings.replyOnMention) return
 
+  const chatId = String(msg.chat.id)
+  const chatTitle = msg.chat.title || chatId
+
   const apiKey = (useRuntimeConfig().geminiApiKey || '').trim()
   if (!apiKey) {
     console.warn('[AI] Mention received but GEMINI_API_KEY is not configured.')
+    const grp = await db.getGroupByChatId(chatId)
+    await db.createLog(
+      grp ? grp.id : null,
+      chatTitle,
+      null,
+      'AI reply skipped: GEMINI_API_KEY is not set on the server',
+      'FAILED',
+      'Missing GEMINI_API_KEY (dev: .env then restart; Cloudflare: wrangler secret put NUXT_GEMINI_API_KEY)'
+    )
     return
   }
-
-  const chatId = String(msg.chat.id)
-  const chatTitle = msg.chat.title || chatId
   const fromName =
     [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') ||
     (msg.from?.username ? `@${msg.from.username}` : 'User')
