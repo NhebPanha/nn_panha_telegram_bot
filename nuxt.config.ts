@@ -46,7 +46,9 @@ export default defineNuxtConfig({
     // Shared secret used to authenticate Telegram webhook calls
     webhookSecret: process.env.WEBHOOK_SECRET || 'teleflow-webhook-secret',
     // Public base URL of the deployment, used to register the webhook
-    publicUrl: process.env.PUBLIC_URL || ''
+    publicUrl: process.env.PUBLIC_URL || '',
+    // Google Gemini API key powering the AI auto-reply (set as NUXT_GEMINI_API_KEY on Cloudflare)
+    geminiApiKey: process.env.GEMINI_API_KEY || ''
   },
 
   // Cloudflare Workers target

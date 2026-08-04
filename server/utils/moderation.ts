@@ -6,6 +6,7 @@ import {
   TelegramIncomingMessage,
   TelegramUpdate
 } from './telegram'
+import { generateAiReply } from './ai'
 
 // Escape text so it is safe inside an HTML-parse-mode Telegram message.
 function escapeHtml(text: string): string {
@@ -346,6 +347,102 @@ async function recordActivity(msg: TelegramIncomingMessage) {
   })
 }
 
+// Was this message a reply to one of the bot's own messages?
+function isReplyToBot(msg: TelegramIncomingMessage, botUserId: number, botUsername?: string): boolean {
+  const replied = msg.reply_to_message
+  if (!replied?.from) return false
+  if (replied.from.id === botUserId) return true
+  return (
+    !!replied.from.is_bot &&
+    !!botUsername &&
+    replied.from.username?.toLowerCase() === botUsername.toLowerCase()
+  )
+}
+
+/**
+ * If AI auto-reply is enabled and the user mentioned the bot (or replied to it),
+ * generate a Claude answer and post it back as a reply.
+ */
+async function maybeAiReply(
+  token: string,
+  botUserId: number,
+  botUsername: string | undefined,
+  msg: TelegramIncomingMessage
+) {
+  if (msg.chat.type === 'channel') return
+  if (msg.from?.id === botUserId || msg.from?.is_bot) return
+
+  const text = (msg.text || '').trim()
+  if (!text) return
+
+  if (!mentionsBot(msg, botUserId, botUsername) && !isReplyToBot(msg, botUserId, botUsername)) return
+
+  const settings = await db.getAiSettings()
+  if (!settings.enabled || !settings.replyOnMention) return
+
+  const apiKey = (useRuntimeConfig().geminiApiKey || '').trim()
+  if (!apiKey) {
+    console.warn('[AI] Mention received but GEMINI_API_KEY is not configured.')
+    return
+  }
+
+  const chatId = String(msg.chat.id)
+  const chatTitle = msg.chat.title || chatId
+  const fromName =
+    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') ||
+    (msg.from?.username ? `@${msg.from.username}` : 'User')
+
+  // Remove the bot @mention from the prompt so it reads as a plain question.
+  let prompt = text
+  if (botUsername) prompt = prompt.replace(new RegExp(`@${botUsername}`, 'ig'), '').trim()
+  if (!prompt) prompt = text
+
+  // Provide a little prior context from this chat for coherence.
+  const stored = await db.getChatMessagesByChatId(chatId, 12)
+  const history = stored
+    .filter(m => m.messageId !== msg.message_id)
+    .slice(-6)
+    .map(m => {
+      const isAssistant = m.direction === 'out' || m.isBot
+      return {
+        role: isAssistant ? ('assistant' as const) : ('user' as const),
+        text: isAssistant ? m.text : `${m.fromName}: ${m.text}`
+      }
+    })
+    .filter(m => m.text.trim())
+
+  try {
+    const reply = await generateAiReply({ apiKey, settings, userText: prompt, userName: fromName, history })
+    if (!reply) return
+
+    const sent = await sendTelegramMessage(token, chatId, escapeHtml(reply), 'HTML', msg.message_id)
+
+    const bot = await db.getBot()
+    await db.addChatMessage({
+      chatId,
+      messageId: sent.message_id,
+      fromId: null,
+      fromName: bot?.firstName || 'AI',
+      fromUsername: bot?.username,
+      isBot: true,
+      direction: 'out',
+      text: reply,
+      date: new Date().toISOString(),
+      replyToMessageId: msg.message_id,
+      replyToName: fromName,
+      replyToText: prompt.length > 60 ? `${prompt.slice(0, 60)}…` : prompt
+    })
+
+    const group = await db.getGroupByChatId(chatId)
+    await db.createLog(group ? group.id : null, chatTitle, null, `🤖 AI replied to ${fromName}`, 'SUCCESS', null, null)
+    console.log(`[AI] Replied to ${fromName} in "${chatTitle}"`)
+  } catch (err: any) {
+    console.error(`[AI] Reply failed in ${chatId}: ${err.message}`)
+    const group = await db.getGroupByChatId(chatId)
+    await db.createLog(group ? group.id : null, chatTitle, null, `AI reply failed: ${err.message}`, 'FAILED', err.message)
+  }
+}
+
 /**
  * Handle a single Telegram update: discover its chat, record activity, then moderate it.
  */
@@ -374,4 +471,5 @@ export async function handleTelegramUpdate(token: string, botUserId: number, upd
 
   await recordActivity(msg)
   await moderateMessage(token, botUserId, msg, settings)
+  await maybeAiReply(token, botUserId, botUsername, msg)
 }

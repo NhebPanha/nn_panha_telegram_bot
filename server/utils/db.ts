@@ -8,6 +8,7 @@ const MODERATION_PATH = 'moderation.json'
 const USERS_PATH = 'users.json'
 const MEMBERS_PATH = 'members.json'
 const MESSAGES_PATH = 'messages.json'
+const AI_PATH = 'ai.json'
 const LEGACY_BOTS_PATH = 'bots.json'
 
 // Interfaces
@@ -70,6 +71,16 @@ export interface ModerationSettings {
   deleteStickers: boolean
   deleteFiles: boolean
   blockedExtensions?: string[]
+}
+
+// AI auto-reply configuration. When enabled, the bot replies with a Claude-
+// generated answer whenever a user @-mentions it (or replies to it) in a group.
+export interface AiSettings {
+  enabled: boolean
+  replyOnMention: boolean
+  model: string
+  systemPrompt: string
+  maxTokens: number
 }
 
 // A user the bot has observed in a chat. The Bot API cannot list a group's
@@ -417,6 +428,25 @@ export const db = {
     const current = await this.getModerationSettings()
     const merged: ModerationSettings = { ...current, ...updates }
     await writeJsonFile(MODERATION_PATH, merged)
+    return merged
+  },
+
+  // AI Auto-Reply Settings
+  async getAiSettings(): Promise<AiSettings> {
+    return readJsonFile<AiSettings>(AI_PATH, {
+      enabled: false,
+      replyOnMention: true,
+      model: 'gemini-flash-latest',
+      systemPrompt:
+        'You are a friendly, concise assistant in a Telegram group chat. Answer the user helpfully in the same language they use. Keep replies short (a few sentences) and do not use Markdown headings.',
+      maxTokens: 600
+    })
+  },
+
+  async saveAiSettings(updates: Partial<AiSettings>): Promise<AiSettings> {
+    const current = await this.getAiSettings()
+    const merged: AiSettings = { ...current, ...updates }
+    await writeJsonFile(AI_PATH, merged)
     return merged
   },
 

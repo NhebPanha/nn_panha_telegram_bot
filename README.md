@@ -19,6 +19,7 @@ files under `data/`).
 | **Bot Settings** | Add/verify a bot token (stored **encrypted**), view permissions, enable/disable. |
 | **Groups** | Register groups/channels/supergroups as broadcast targets. Bulk import, search, filter, auto-discovery when the bot is added to a chat. |
 | **Chat** | Telegram-style view per group: member list (admins + everyone the bot has seen), message history, **reply**, and **delete message**. |
+| **AI Reply** | When enabled, the bot answers with **Google Gemini** whenever a user @-mentions it (or replies to it) in a group. Configurable model (Gemini Flash / Flash Lite / Pro), system-prompt persona, and reply length. |
 | **Schedules** | Daily / weekly / monthly / one-time / cron broadcasts, per-timezone, with **per-group targeting** (send to all groups or only selected ones). |
 | **Moderation** | Auto-delete links and/or stickers; posts a tagged notice. Manual `@bot delete` reply-command (admins only) to remove any message. |
 | **Logs** | Every send/moderation action recorded with status and error detail. |
@@ -76,7 +77,13 @@ TELEGRAM_GROUP_CHAT_ID=-1001234567890
 
 # Public HTTPS URL of the deployment (used to register the webhook)
 PUBLIC_URL=https://your-worker.workers.dev
+
+# Google Gemini API key — powers the AI Reply feature (optional; AI stays off without it)
+GEMINI_API_KEY=your-gemini-key
 ```
+
+> Get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
+> On Cloudflare, set it as a secret: `npx wrangler secret put NUXT_GEMINI_API_KEY`.
 
 > On Cloudflare, these map to `NUXT_*` runtime config (e.g.
 > `NUXT_ENCRYPTION_KEY`, `NUXT_WEBHOOK_SECRET`, `NUXT_PUBLIC_URL`).
