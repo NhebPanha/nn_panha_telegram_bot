@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
 import { useToast } from '../composables/useToast'
-import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download, Sticker } from 'lucide-vue-next'
+import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download, Sticker, Image, Video } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
@@ -16,6 +16,8 @@ const showMembers = ref(true)
 const replyingTo = ref<ReplyTarget | null>(null)
 const showStickerPicker = ref(false)
 const messagesEnd = ref<HTMLElement | null>(null)
+const photoInput = ref<HTMLInputElement | null>(null)
+const videoInput = ref<HTMLInputElement | null>(null)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const activeGroup = computed(() => groupsStore.groups.find(g => g.id === activeGroupId.value) || null)
@@ -124,6 +126,35 @@ const handleSendSticker = async (sticker: ChatMessage) => {
   } catch (error: any) {
     replyingTo.value = replyTo
     toast.error(error.statusMessage || 'Failed to send sticker')
+  }
+}
+
+const handleMediaSelect = async (event: Event, mediaType: 'photo' | 'video') => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !activeGroupId.value) return
+
+  if (!file.type.startsWith(`${mediaType === 'photo' ? 'image' : 'video'}/`)) {
+    toast.error(`Please choose a ${mediaType === 'photo' ? 'image' : 'video'} file`)
+    return
+  }
+  const maxSize = (mediaType === 'photo' ? 10 : 50) * 1024 * 1024
+  if (file.size > maxSize) {
+    toast.error(`${mediaType === 'photo' ? 'Images' : 'Videos'} must be ${mediaType === 'photo' ? '10' : '50'} MB or smaller`)
+    return
+  }
+
+  const groupId = activeGroupId.value
+  const caption = draft.value.trim()
+  const replyTo = replyingTo.value
+  try {
+    await chatStore.sendMedia(groupId, file, mediaType, caption, replyTo)
+    draft.value = ''
+    replyingTo.value = null
+    await scrollToBottom()
+  } catch (error: any) {
+    toast.error(error.statusMessage || `Failed to send ${mediaType}`)
   }
 }
 
@@ -442,6 +473,26 @@ onBeforeUnmount(() => {
 
           <!-- Composer -->
           <form @submit.prevent="handleSend" class="p-3 flex items-end gap-2" :class="replyingTo ? 'pt-2' : 'border-t border-slate-800/80'">
+            <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
+            <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
+            <button
+              type="button"
+              :disabled="chatStore.isSending"
+              @click="photoInput?.click()"
+              class="p-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition-colors flex-shrink-0"
+              title="Send image"
+            >
+              <Image class="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              :disabled="chatStore.isSending"
+              @click="videoInput?.click()"
+              class="p-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition-colors flex-shrink-0"
+              title="Send video"
+            >
+              <Video class="w-5 h-5" />
+            </button>
             <button
               type="button"
               @click="showStickerPicker = !showStickerPicker"

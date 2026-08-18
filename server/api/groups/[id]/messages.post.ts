@@ -1,6 +1,6 @@
 import { db } from '../../../utils/db'
 import { decryptToken } from '../../../utils/crypto'
-import { sendTelegramMessage, sendTelegramSticker } from '../../../utils/telegram'
+import { sendTelegramMessage, sendTelegramSticker, sendTelegramPhotoUpload, sendTelegramVideoUpload } from '../../../utils/telegram'
 
 /**
  * Send a message to a group from the dashboard and store it in the chat
@@ -18,11 +18,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  const body = await readBody(event)
+  const isMultipart = getHeader(event, 'content-type')?.includes('multipart/form-data')
+  const form = isMultipart ? await event.request.formData() : null
+  const body = form ? Object.fromEntries(form.entries()) : await readBody(event)
   const text = typeof body?.message === 'string' ? body.message.trim() : ''
   const stickerFileId = typeof body?.stickerFileId === 'string' ? body.stickerFileId.trim() : ''
-  if (!text && !stickerFileId) {
-    throw createError({ statusCode: 400, statusMessage: 'Message text or sticker is required' })
+  const mediaType = body?.mediaType === 'photo' || body?.mediaType === 'video' ? body.mediaType : null
+  const mediaFile = form?.get('media')
+  if (!text && !stickerFileId && !(mediaType && mediaFile instanceof File)) {
+    throw createError({ statusCode: 400, statusMessage: 'Message, sticker, or media file is required' })
+  }
+  if (mediaType && !(mediaFile instanceof File)) {
+    throw createError({ statusCode: 400, statusMessage: 'Media file is required' })
+  }
+  if (mediaFile instanceof File && mediaFile.size > (mediaType === 'video' ? 50 : 10) * 1024 * 1024) {
+    throw createError({ statusCode: 400, statusMessage: `${mediaType === 'video' ? 'Videos' : 'Images'} must be ${mediaType === 'video' ? '50' : '10'} MB or smaller` })
   }
 
   const bot = await db.getBot()
@@ -34,10 +44,14 @@ export default defineEventHandler(async (event) => {
   const replyToMessageId =
     typeof body.replyToMessageId === 'number' ? body.replyToMessageId : undefined
 
-  let response: { message_id: number }
+  let response: { message_id: number; photo?: Array<{ file_id: string }>; video?: { file_id: string; mime_type?: string } }
   try {
     const token = await decryptToken(bot.token)
-    response = stickerFileId
+    response = mediaType === 'photo' && mediaFile instanceof File
+      ? await sendTelegramPhotoUpload(token, group.chatId, mediaFile, mediaFile.name, text, replyToMessageId)
+      : mediaType === 'video' && mediaFile instanceof File
+        ? await sendTelegramVideoUpload(token, group.chatId, mediaFile, mediaFile.name, text, replyToMessageId)
+      : stickerFileId
       ? await sendTelegramSticker(token, group.chatId, stickerFileId, replyToMessageId)
       : await sendTelegramMessage(token, group.chatId, text, parseMode, replyToMessageId)
   } catch (err: any) {
@@ -70,10 +84,15 @@ export default defineEventHandler(async (event) => {
             ? body.stickerFormat
             : 'static' as const
         }
-      : {})
+      : {}),
+    ...(mediaType === 'photo' && response.photo?.length
+      ? { mediaType: 'photo' as const, mediaFileId: response.photo[response.photo.length - 1].file_id }
+      : mediaType === 'video' && response.video
+        ? { mediaType: 'video' as const, mediaFileId: response.video.file_id, mediaMime: response.video.mime_type, mediaFileName: mediaFile instanceof File ? mediaFile.name : undefined }
+        : {})
   })
 
-  await db.createLog(group.id, group.name, null, text || `${body?.stickerEmoji || ''} Sticker`.trim(), 'SUCCESS', null, response)
+  await db.createLog(group.id, group.name, null, text || (mediaType === 'photo' ? 'Photo' : mediaType === 'video' ? 'Video' : `${body?.stickerEmoji || ''} Sticker`.trim()), 'SUCCESS', null, response)
 
   return { success: true, message: stored }
 })

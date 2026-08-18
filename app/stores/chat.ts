@@ -155,6 +155,27 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
+    async sendMedia(groupId: string, file: File, mediaType: 'photo' | 'video', message = '', replyTo?: ReplyTarget | null) {
+      this.isSending = true
+      try {
+        const form = new FormData()
+        form.set('media', file)
+        form.set('mediaType', mediaType)
+        form.set('message', message)
+        if (replyTo?.messageId) form.set('replyToMessageId', String(replyTo.messageId))
+        if (replyTo?.name) form.set('replyToName', replyTo.name)
+        if (replyTo?.text) form.set('replyToText', replyTo.text)
+        const data = await $fetch<{ success: boolean; message: ChatMessage }>(
+          `/api/groups/${groupId}/messages`,
+          { method: 'POST', body: form }
+        )
+        if (data.success) this.messages.push(data.message)
+        return data
+      } finally {
+        this.isSending = false
+      }
+    },
+
     async deleteMessage(groupId: string, messageId: number) {
       const data = await $fetch<{ success: boolean; deletedMessageId: number }>(
         `/api/groups/${groupId}/messages/${messageId}`,
