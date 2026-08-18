@@ -2,6 +2,15 @@ import { db } from '../../../utils/db'
 import { decryptToken } from '../../../utils/crypto'
 import { sendTelegramMessage, sendTelegramSticker, sendTelegramPhotoUpload, sendTelegramVideoUpload } from '../../../utils/telegram'
 
+// Avoid relying on a global File constructor: older Worker compatibility
+// runtimes expose multipart files as File-like values without that global.
+function isUploadedFile(value: unknown): value is File {
+  return !!value && typeof value === 'object' &&
+    typeof (value as File).arrayBuffer === 'function' &&
+    typeof (value as File).name === 'string' &&
+    typeof (value as File).size === 'number'
+}
+
 /**
  * Send a message to a group from the dashboard and store it in the chat
  * history as an outgoing message (Telegram-style chat view).
@@ -25,13 +34,14 @@ export default defineEventHandler(async (event) => {
   const stickerFileId = typeof body?.stickerFileId === 'string' ? body.stickerFileId.trim() : ''
   const mediaType = body?.mediaType === 'photo' || body?.mediaType === 'video' ? body.mediaType : null
   const mediaFile = form?.get('media')
-  if (!text && !stickerFileId && !(mediaType && mediaFile instanceof File)) {
+  const uploadedMedia = isUploadedFile(mediaFile) ? mediaFile : null
+  if (!text && !stickerFileId && !(mediaType && uploadedMedia)) {
     throw createError({ statusCode: 400, statusMessage: 'Message, sticker, or media file is required' })
   }
-  if (mediaType && !(mediaFile instanceof File)) {
+  if (mediaType && !uploadedMedia) {
     throw createError({ statusCode: 400, statusMessage: 'Media file is required' })
   }
-  if (mediaFile instanceof File && mediaFile.size > (mediaType === 'video' ? 50 : 10) * 1024 * 1024) {
+  if (uploadedMedia && uploadedMedia.size > (mediaType === 'video' ? 50 : 10) * 1024 * 1024) {
     throw createError({ statusCode: 400, statusMessage: `${mediaType === 'video' ? 'Videos' : 'Images'} must be ${mediaType === 'video' ? '50' : '10'} MB or smaller` })
   }
 
@@ -47,10 +57,10 @@ export default defineEventHandler(async (event) => {
   let response: { message_id: number; photo?: Array<{ file_id: string }>; video?: { file_id: string; mime_type?: string } }
   try {
     const token = await decryptToken(bot.token)
-    response = mediaType === 'photo' && mediaFile instanceof File
-      ? await sendTelegramPhotoUpload(token, group.chatId, mediaFile, mediaFile.name, text, replyToMessageId)
-      : mediaType === 'video' && mediaFile instanceof File
-        ? await sendTelegramVideoUpload(token, group.chatId, mediaFile, mediaFile.name, text, replyToMessageId)
+    response = mediaType === 'photo' && uploadedMedia
+      ? await sendTelegramPhotoUpload(token, group.chatId, uploadedMedia, uploadedMedia.name, text, replyToMessageId)
+      : mediaType === 'video' && uploadedMedia
+        ? await sendTelegramVideoUpload(token, group.chatId, uploadedMedia, uploadedMedia.name, text, replyToMessageId)
       : stickerFileId
       ? await sendTelegramSticker(token, group.chatId, stickerFileId, replyToMessageId)
       : await sendTelegramMessage(token, group.chatId, text, parseMode, replyToMessageId)
@@ -88,7 +98,7 @@ export default defineEventHandler(async (event) => {
     ...(mediaType === 'photo' && response.photo?.length
       ? { mediaType: 'photo' as const, mediaFileId: response.photo[response.photo.length - 1].file_id }
       : mediaType === 'video' && response.video
-        ? { mediaType: 'video' as const, mediaFileId: response.video.file_id, mediaMime: response.video.mime_type, mediaFileName: mediaFile instanceof File ? mediaFile.name : undefined }
+        ? { mediaType: 'video' as const, mediaFileId: response.video.file_id, mediaMime: response.video.mime_type, mediaFileName: uploadedMedia?.name }
         : {})
   })
 
