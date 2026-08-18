@@ -46,6 +46,8 @@ export interface TelegramIncomingMessage {
     id: number
     type: 'private' | 'group' | 'supergroup' | 'channel'
     title?: string
+    first_name?: string
+    last_name?: string
     username?: string
   }
   date: number
@@ -76,6 +78,8 @@ export interface TelegramChatMemberUpdated {
     id: number
     type: 'private' | 'group' | 'supergroup' | 'channel'
     title?: string
+    first_name?: string
+    last_name?: string
     username?: string
   }
   new_chat_member?: {

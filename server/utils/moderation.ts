@@ -229,14 +229,18 @@ async function autoRegisterChat(chat: {
   id: number
   type: 'private' | 'group' | 'supergroup' | 'channel'
   title?: string
+  first_name?: string
+  last_name?: string
   username?: string
 }) {
-  if (chat.type === 'private') return
   const chatId = String(chat.id)
   const existing = await db.getGroupByChatId(chatId)
   if (existing) return
 
-  const name = chat.title || (chat.username ? `@${chat.username}` : `Chat ${chatId}`)
+  const name =
+    chat.title ||
+    [chat.first_name, chat.last_name].filter(Boolean).join(' ') ||
+    (chat.username ? `@${chat.username}` : `Chat ${chatId}`)
   await db.createGroup(name, chatId, chat.type, true)
   console.log(`[Discovery] Auto-registered ${chat.type} "${name}" (${chatId})`)
 }
@@ -308,7 +312,6 @@ async function moderateMessage(
 // Record the sender into the member registry and store the message into the
 // chat history so the dashboard can show members and a Telegram-style thread.
 async function recordActivity(msg: TelegramIncomingMessage) {
-  if (msg.chat.type === 'private') return
   const chatId = String(msg.chat.id)
 
   if (msg.from) {
