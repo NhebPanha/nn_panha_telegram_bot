@@ -324,6 +324,35 @@ export async function sendTelegramMessage(
   }
 }
 
+/** Send a Telegram sticker already known to the bot (by file_id). */
+export async function sendTelegramSticker(
+  token: string,
+  chatId: string,
+  stickerFileId: string,
+  replyToMessageId?: number
+): Promise<{ message_id: number }> {
+  try {
+    const response = await $fetch<{ ok: boolean; result: { message_id: number } }>(
+      `https://api.telegram.org/bot${token}/sendSticker`,
+      {
+        method: 'POST',
+        body: {
+          chat_id: chatId,
+          sticker: stickerFileId,
+          ...(replyToMessageId
+            ? { reply_parameters: { message_id: replyToMessageId, allow_sending_without_reply: true } }
+            : {})
+        }
+      }
+    )
+    if (!response.ok) throw new Error('Telegram API responded with ok: false')
+    return response.result
+  } catch (error: any) {
+    const message = error.data?.description || error.message || 'Unknown error'
+    throw new Error(`Telegram Send Sticker Failed: ${message}`)
+  }
+}
+
 export async function sendTelegramPhoto(
   token: string,
   chatId: string,

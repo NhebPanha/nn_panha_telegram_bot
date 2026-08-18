@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
 import { useToast } from '../composables/useToast'
-import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download } from 'lucide-vue-next'
+import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download, Sticker } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
@@ -14,10 +14,19 @@ const draft = ref('')
 const searchQuery = ref('')
 const showMembers = ref(true)
 const replyingTo = ref<ReplyTarget | null>(null)
+const showStickerPicker = ref(false)
 const messagesEnd = ref<HTMLElement | null>(null)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const activeGroup = computed(() => groupsStore.groups.find(g => g.id === activeGroupId.value) || null)
+const stickers = computed(() => {
+  const seen = new Set<string>()
+  return chatStore.messages.filter((msg) => {
+    if (msg.mediaType !== 'sticker' || !msg.mediaFileId || seen.has(msg.mediaFileId)) return false
+    seen.add(msg.mediaFileId)
+    return true
+  })
+})
 
 // Only real chats can host a conversation (channels are broadcast-only, no members thread)
 const chatList = computed(() =>
@@ -36,6 +45,7 @@ const scrollToBottom = async () => {
 const loadChat = async (id: string) => {
   activeGroupId.value = id
   replyingTo.value = null
+  showStickerPicker.value = false
   chatStore.reset()
   await Promise.all([chatStore.fetchMessages(id), chatStore.fetchMembers(id)])
   await scrollToBottom()
@@ -99,6 +109,21 @@ const handleSend = async () => {
     draft.value = text
     replyingTo.value = replyTo
     toast.error(error.statusMessage || 'Failed to send message')
+  }
+}
+
+const handleSendSticker = async (sticker: ChatMessage) => {
+  if (!activeGroupId.value || !sticker.mediaFileId) return
+  const groupId = activeGroupId.value
+  const replyTo = replyingTo.value
+  showStickerPicker.value = false
+  replyingTo.value = null
+  try {
+    await chatStore.sendSticker(groupId, sticker, replyTo)
+    await scrollToBottom()
+  } catch (error: any) {
+    replyingTo.value = replyTo
+    toast.error(error.statusMessage || 'Failed to send sticker')
   }
 }
 
@@ -379,8 +404,53 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
+          <!-- Sticker picker -->
+          <div v-if="showStickerPicker" class="border-t border-slate-800/80 bg-slate-950/40 px-3 py-2">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[11px] font-semibold text-slate-300">Recent stickers</p>
+              <button type="button" @click="showStickerPicker = false" class="p-1 text-slate-500 hover:text-white" title="Close sticker picker">
+                <X class="w-4 h-4" />
+              </button>
+            </div>
+            <div v-if="stickers.length" class="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-36 overflow-y-auto">
+              <button
+                v-for="sticker in stickers"
+                :key="sticker.mediaFileId"
+                type="button"
+                :disabled="chatStore.isSending"
+                @click="handleSendSticker(sticker)"
+                class="h-14 rounded-lg hover:bg-slate-800 disabled:opacity-40 flex items-center justify-center overflow-hidden"
+                :title="`Send ${sticker.mediaEmoji || 'sticker'}`"
+              >
+                <img
+                  v-if="sticker.stickerFormat === 'static'"
+                  :src="mediaSrc(sticker.mediaFileId)"
+                  :alt="sticker.mediaEmoji || 'Sticker'"
+                  class="w-12 h-12 object-contain"
+                />
+                <video
+                  v-else-if="sticker.stickerFormat === 'video'"
+                  :src="mediaSrc(sticker.mediaFileId)"
+                  autoplay loop muted playsinline
+                  class="w-12 h-12 object-contain"
+                ></video>
+                <span v-else class="text-3xl">{{ sticker.mediaEmoji || 'Sticker' }}</span>
+              </button>
+            </div>
+            <p v-else class="text-[11px] text-slate-500">Stickers sent in this chat will appear here.</p>
+          </div>
+
           <!-- Composer -->
           <form @submit.prevent="handleSend" class="p-3 flex items-end gap-2" :class="replyingTo ? 'pt-2' : 'border-t border-slate-800/80'">
+            <button
+              type="button"
+              @click="showStickerPicker = !showStickerPicker"
+              :class="showStickerPicker ? 'text-purple-300 bg-purple-500/15' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
+              class="p-2.5 rounded-lg transition-colors flex-shrink-0"
+              title="Choose a sticker"
+            >
+              <Sticker class="w-5 h-5" />
+            </button>
             <textarea
               v-model="draft"
               rows="1"

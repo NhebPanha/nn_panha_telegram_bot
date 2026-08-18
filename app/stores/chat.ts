@@ -126,6 +126,35 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
+    async sendSticker(
+      groupId: string,
+      sticker: Pick<ChatMessage, 'mediaFileId' | 'mediaEmoji' | 'stickerFormat'>,
+      replyTo?: ReplyTarget | null
+    ) {
+      if (!sticker.mediaFileId) throw new Error('Sticker file is unavailable')
+      this.isSending = true
+      try {
+        const data = await $fetch<{ success: boolean; message: ChatMessage }>(
+          `/api/groups/${groupId}/messages`,
+          {
+            method: 'POST',
+            body: {
+              stickerFileId: sticker.mediaFileId,
+              stickerEmoji: sticker.mediaEmoji,
+              stickerFormat: sticker.stickerFormat,
+              replyToMessageId: replyTo?.messageId,
+              replyToName: replyTo?.name,
+              replyToText: replyTo?.text
+            }
+          }
+        )
+        if (data.success) this.messages.push(data.message)
+        return data
+      } finally {
+        this.isSending = false
+      }
+    },
+
     async deleteMessage(groupId: string, messageId: number) {
       const data = await $fetch<{ success: boolean; deletedMessageId: number }>(
         `/api/groups/${groupId}/messages/${messageId}`,

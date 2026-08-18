@@ -1,6 +1,6 @@
 import { db } from '../../../utils/db'
 import { decryptToken } from '../../../utils/crypto'
-import { sendTelegramMessage } from '../../../utils/telegram'
+import { sendTelegramMessage, sendTelegramSticker } from '../../../utils/telegram'
 
 /**
  * Send a message to a group from the dashboard and store it in the chat
@@ -19,9 +19,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const text = (body?.message || '').trim()
-  if (!text) {
-    throw createError({ statusCode: 400, statusMessage: 'Message text is required' })
+  const text = typeof body?.message === 'string' ? body.message.trim() : ''
+  const stickerFileId = typeof body?.stickerFileId === 'string' ? body.stickerFileId.trim() : ''
+  if (!text && !stickerFileId) {
+    throw createError({ statusCode: 400, statusMessage: 'Message text or sticker is required' })
   }
 
   const bot = await db.getBot()
@@ -36,7 +37,9 @@ export default defineEventHandler(async (event) => {
   let response: { message_id: number }
   try {
     const token = await decryptToken(bot.token)
-    response = await sendTelegramMessage(token, group.chatId, text, parseMode, replyToMessageId)
+    response = stickerFileId
+      ? await sendTelegramSticker(token, group.chatId, stickerFileId, replyToMessageId)
+      : await sendTelegramMessage(token, group.chatId, text, parseMode, replyToMessageId)
   } catch (err: any) {
     await db.createLog(group.id, group.name, null, text, 'FAILED', err.message)
     throw createError({
@@ -57,10 +60,20 @@ export default defineEventHandler(async (event) => {
     date: new Date().toISOString(),
     replyToMessageId: replyToMessageId ?? null,
     replyToName: typeof body.replyToName === 'string' ? body.replyToName : undefined,
-    replyToText: typeof body.replyToText === 'string' ? body.replyToText : undefined
+    replyToText: typeof body.replyToText === 'string' ? body.replyToText : undefined,
+    ...(stickerFileId
+      ? {
+          mediaType: 'sticker' as const,
+          mediaFileId: stickerFileId,
+          mediaEmoji: typeof body.stickerEmoji === 'string' ? body.stickerEmoji : undefined,
+          stickerFormat: body.stickerFormat === 'video' || body.stickerFormat === 'animated'
+            ? body.stickerFormat
+            : 'static' as const
+        }
+      : {})
   })
 
-  await db.createLog(group.id, group.name, null, text, 'SUCCESS', null, response)
+  await db.createLog(group.id, group.name, null, text || `${body?.stickerEmoji || ''} Sticker`.trim(), 'SUCCESS', null, response)
 
   return { success: true, message: stored }
 })
