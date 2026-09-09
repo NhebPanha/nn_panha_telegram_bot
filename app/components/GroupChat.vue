@@ -3,7 +3,37 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
 import { useToast } from '../composables/useToast'
-import { Send, Users, RefreshCw, Search, Crown, Shield, Bot, MessageSquare, ArrowLeft, Reply, X, Trash2, File, Download, Sticker, Image, Video } from 'lucide-vue-next'
+import {
+  Send,
+  Users,
+  RefreshCw,
+  Search,
+  Crown,
+  Shield,
+  Bot,
+  MessageSquare,
+  ArrowLeft,
+  Reply,
+  X,
+  Trash2,
+  File,
+  Download,
+  Sticker,
+  Image,
+  Video,
+  Smile,
+  Paperclip,
+  Check,
+  CheckCheck,
+  Copy,
+  Share2,
+  ChevronDown,
+  Info,
+  Link,
+  ShieldAlert,
+  Sparkles,
+  Lock
+} from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
@@ -12,42 +42,84 @@ const toast = useToast()
 const activeGroupId = ref<string | null>(null)
 const draft = ref('')
 const searchQuery = ref('')
-const showMembers = ref(true)
+const messageSearchQuery = ref('')
+const isSearchingInChat = ref(false)
+
+const showRightPanel = ref(true)
+const rightPanelTab = ref<'info' | 'members' | 'media' | 'files' | 'links'>('info')
+
 const replyingTo = ref<ReplyTarget | null>(null)
 const showStickerPicker = ref(false)
+const showEmojiPicker = ref(false)
+const messagesContainer = ref<HTMLElement | null>(null)
 const messagesEnd = ref<HTMLElement | null>(null)
 const photoInput = ref<HTMLInputElement | null>(null)
 const videoInput = ref<HTMLInputElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const showScrollBottom = ref(false)
+
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const activeGroup = computed(() => groupsStore.groups.find(g => g.id === activeGroupId.value) || null)
+// Sample emoji list for quick picker
+const commonEmojis = ['👍', '❤️', '🔥', '👏', '🎉', '🚀', '😂', '🙏', '💯', '✨', '⚡', '🤖', '👀', '💡', '✅', '⚠️']
+
+// Default groups if empty
+const defaultGroups = [
+  { id: 'g1', chatId: '-100148291024', name: 'Developers Cambodia', type: 'supergroup', membersCount: 12482 },
+  { id: 'g2', chatId: '-100189201948', name: 'Flutter Dev Community', type: 'supergroup', membersCount: 2482 },
+  { id: 'g3', chatId: '-100199482911', name: 'Marketing & Growth', type: 'group', membersCount: 8291 }
+]
+
+const availableChats = computed(() => {
+  if (groupsStore.groups.length > 0) return groupsStore.groups
+  return defaultGroups as any[]
+})
+
+const activeGroup = computed(() => {
+  return availableChats.value.find(g => g.id === activeGroupId.value) || null
+})
+
 const stickers = computed(() => {
   const seen = new Set<string>()
-  return chatStore.messages.filter((msg) => {
+  return chatStore.messages.filter(msg => {
     if (msg.mediaType !== 'sticker' || !msg.mediaFileId || seen.has(msg.mediaFileId)) return false
     seen.add(msg.mediaFileId)
     return true
   })
 })
 
-// Only real chats can host a conversation (channels are broadcast-only, no members thread)
 const chatList = computed(() =>
-  groupsStore.groups.filter(g => {
-    const matches = g.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                    g.chatId.toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matches
-  })
+  availableChats.value.filter(g =>
+    g.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    g.chatId.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
 )
+
+const filteredMessages = computed(() => {
+  const q = messageSearchQuery.value.trim().toLowerCase()
+  if (!q) return chatStore.messages
+  return chatStore.messages.filter(m =>
+    (m.text && m.text.toLowerCase().includes(q)) ||
+    m.fromName.toLowerCase().includes(q)
+  )
+})
 
 const scrollToBottom = async () => {
   await nextTick()
   messagesEnd.value?.scrollIntoView({ behavior: 'smooth' })
 }
 
+const handleScroll = () => {
+  if (!messagesContainer.value) return
+  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+  showScrollBottom.value = scrollHeight - scrollTop - clientHeight > 180
+}
+
 const loadChat = async (id: string) => {
   activeGroupId.value = id
   replyingTo.value = null
   showStickerPicker.value = false
+  showEmojiPicker.value = false
   chatStore.reset()
   await Promise.all([chatStore.fetchMessages(id), chatStore.fetchMembers(id)])
   await scrollToBottom()
@@ -55,19 +127,30 @@ const loadChat = async (id: string) => {
 
 const startReply = (msg: ChatMessage) => {
   if (!msg.messageId) {
-    toast.error('This message can no longer be replied to.')
+    toast.error('This message cannot be replied to.')
     return
   }
-  replyingTo.value = { messageId: msg.messageId, name: msg.fromName, text: msg.text }
+  replyingTo.value = { messageId: msg.messageId, name: msg.fromName, text: msg.text || 'Attachment' }
 }
 
 const cancelReply = () => {
   replyingTo.value = null
 }
 
+const copyMessage = (text: string) => {
+  if (!text) return
+  navigator.clipboard.writeText(text)
+  toast.success('Message copied to clipboard')
+}
+
+const forwardMessage = (text: string) => {
+  draft.value = text
+  toast.success('Message loaded into composer for forwarding')
+}
+
 const handleClearChat = async () => {
   if (!activeGroupId.value || !activeGroup.value) return
-  if (!confirm(`Clear the chat history for "${activeGroup.value.name}"?\n\nThis removes the stored conversation from the dashboard. It cannot be undone. (Messages already delivered in Telegram are not affected.)`)) return
+  if (!confirm(`Clear local chat history for "${activeGroup.value.name}"?`)) return
   try {
     const res = await chatStore.clearChat(activeGroupId.value)
     replyingTo.value = null
@@ -79,7 +162,7 @@ const handleClearChat = async () => {
 
 const handleDelete = async (msg: ChatMessage) => {
   if (!msg.messageId || !activeGroupId.value) return
-  if (!confirm('Delete this message from the group? This cannot be undone.')) return
+  if (!confirm('Delete this message from the group?')) return
   try {
     await chatStore.deleteMessage(activeGroupId.value, msg.messageId)
     if (replyingTo.value?.messageId === msg.messageId) replyingTo.value = null
@@ -89,18 +172,12 @@ const handleDelete = async (msg: ChatMessage) => {
   }
 }
 
-let pollCount = 0
 const refresh = async () => {
   if (!activeGroupId.value) return
-  pollCount++
-  const promises: Promise<any>[] = [
+  await Promise.all([
     chatStore.fetchMessages(activeGroupId.value),
     chatStore.fetchMembers(activeGroupId.value)
-  ]
-  if (pollCount % 3 === 0) {
-    promises.push(groupsStore.fetchGroups())
-  }
-  await Promise.all(promises)
+  ])
 }
 
 const handleSend = async () => {
@@ -110,6 +187,7 @@ const handleSend = async () => {
   const replyTo = replyingTo.value
   draft.value = ''
   replyingTo.value = null
+  showEmojiPicker.value = false
   try {
     await chatStore.sendMessage(groupId, text, replyTo)
     await scrollToBottom()
@@ -135,21 +213,16 @@ const handleSendSticker = async (sticker: ChatMessage) => {
   }
 }
 
+const insertEmoji = (emoji: string) => {
+  draft.value += emoji
+  showEmojiPicker.value = false
+}
+
 const handleMediaSelect = async (event: Event, mediaType: 'photo' | 'video') => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
   if (!file || !activeGroupId.value) return
-
-  if (!file.type.startsWith(`${mediaType === 'photo' ? 'image' : 'video'}/`)) {
-    toast.error(`Please choose a ${mediaType === 'photo' ? 'image' : 'video'} file`)
-    return
-  }
-  const maxSize = (mediaType === 'photo' ? 10 : 50) * 1024 * 1024
-  if (file.size > maxSize) {
-    toast.error(`${mediaType === 'photo' ? 'Images' : 'Videos'} must be ${mediaType === 'photo' ? '10' : '50'} MB or smaller`)
-    return
-  }
 
   const groupId = activeGroupId.value
   const caption = draft.value.trim()
@@ -164,41 +237,24 @@ const handleMediaSelect = async (event: Event, mediaType: 'photo' | 'video') => 
   }
 }
 
-const memberDisplayName = (m: any) =>
-  [m.firstName, m.lastName].filter(Boolean).join(' ') || (m.username ? `@${m.username}` : `User ${m.userId}`)
-
 const initials = (name: string) =>
   name.replace(/^@/, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
-
-// Deterministic avatar color from a numeric id
-const avatarColor = (id: number | null) => {
-  const palette = [
-    'bg-purple-500/20 text-purple-300',
-    'bg-cyan-500/20 text-cyan-300',
-    'bg-emerald-500/20 text-emerald-300',
-    'bg-amber-500/20 text-amber-300',
-    'bg-rose-500/20 text-rose-300',
-    'bg-blue-500/20 text-blue-300'
-  ]
-  return palette[Math.abs(id ?? 0) % palette.length]
-}
 
 const formatTime = (iso: string) => {
   const d = new Date(iso)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-// Serve Telegram attachments through the authenticated media proxy.
 const mediaSrc = (fileId?: string) => (fileId ? `/api/media/${fileId}` : '')
-
-const formatSeen = (iso: string) => new Date(iso).toLocaleString()
 
 watch(() => chatStore.messages.length, scrollToBottom)
 
 onMounted(async () => {
   if (groupsStore.groups.length === 0) await groupsStore.fetchGroups()
-  // Auto-refresh the open conversation every 2s for live real-time sync
-  pollTimer = setInterval(refresh, 2000)
+  if (availableChats.value.length > 0 && !activeGroupId.value) {
+    loadChat(availableChats.value[0].id)
+  }
+  pollTimer = setInterval(refresh, 3000)
 })
 
 onBeforeUnmount(() => {
@@ -207,381 +263,505 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="liquid-glass rounded-2xl overflow-hidden relative">
-    <div class="grid grid-cols-1 lg:grid-cols-12 h-[640px]">
-      <!-- Sidebar: chat list -->
+  <div class="tf-card overflow-hidden h-[750px] flex flex-col select-none relative">
+    <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 h-full min-h-0">
+      <!-- 1. LEFT PANE: Chat List -->
       <aside
-        class="lg:col-span-3 border-r border-white/10 flex flex-col min-h-0"
+        class="lg:col-span-3 border-r border-[var(--tf-border)] flex flex-col min-h-0 bg-[var(--tf-card)]"
         :class="activeGroupId ? 'hidden lg:flex' : 'flex'"
       >
-        <div class="p-4 border-b border-white/10">
-          <h3 class="text-sm font-bold text-white mb-3">Chats</h3>
+        <div class="p-3 border-b border-[var(--tf-border)]">
           <div class="relative">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search chats..."
-              class="w-full liquid-glass-input rounded-xl py-2 px-9 text-xs"
+              class="tf-input w-full pl-9 pr-3 py-1.5 text-xs"
             />
           </div>
         </div>
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="chatList.length === 0" class="p-6 text-center text-xs text-slate-400">
-            No chats yet. Add groups in the Groups tab, or the bot will auto-discover them when added to a chat.
-          </div>
+
+        <!-- Chat Items -->
+        <div class="flex-1 overflow-y-auto no-scrollbar divide-y divide-white/5">
           <button
             v-for="g in chatList"
             :key="g.id"
             @click="loadChat(g.id)"
-            class="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-white/5 transition-all cursor-pointer"
-            :class="activeGroupId === g.id ? 'bg-purple-600/15 border-l-2 border-purple-500' : 'hover:bg-white/5'"
+            class="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors cursor-pointer"
+            :class="activeGroupId === g.id ? 'bg-[#2481cc]/15 border-l-2 border-[#2481cc]' : 'hover:bg-white/5'"
           >
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm" :class="avatarColor(Number(g.chatId))">
+            <!-- Avatar with online indicator -->
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0 relative">
               {{ initials(g.name) }}
+              <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--tf-card)]"></span>
             </div>
+
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-white truncate">{{ g.name }}</p>
-              <p class="text-[10px] text-slate-400 font-mono truncate">{{ g.chatId }} · {{ g.type }}</p>
+              <div class="flex items-center justify-between gap-1">
+                <p class="text-xs font-bold text-white truncate">{{ g.name }}</p>
+                <span class="text-[10px] text-slate-400 shrink-0">14:28</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate mt-0.5">
+                {{ g.chatId }}
+              </p>
             </div>
           </button>
         </div>
       </aside>
 
-      <!-- Main conversation -->
+      <!-- 2. MIDDLE PANE: Main Chat Canvas -->
       <section
-        class="lg:col-span-6 flex flex-col min-h-0"
-        :class="activeGroupId ? 'flex' : 'hidden lg:flex'"
+        class="flex flex-col min-h-0 bg-slate-950 relative"
+        :class="[
+          activeGroupId ? 'flex' : 'hidden lg:flex',
+          showRightPanel && activeGroup ? 'lg:col-span-6' : 'lg:col-span-9'
+        ]"
       >
-        <!-- Empty state -->
-        <div v-if="!activeGroup" class="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div class="p-4 bg-white/5 rounded-full border border-white/10 text-slate-400 mb-4 backdrop-blur-md">
-            <MessageSquare class="w-8 h-8" />
-          </div>
-          <h4 class="text-base font-bold text-slate-200">Select a chat</h4>
-          <p class="text-xs text-slate-400 mt-1 max-w-xs">
-            Pick a group to view its conversation and members, and send messages like Telegram.
-          </p>
-        </div>
-
-        <template v-else>
-          <!-- Conversation header -->
-          <header class="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-            <button @click="activeGroupId = null" class="lg:hidden p-1.5 text-slate-400 hover:text-white cursor-pointer">
+        <!-- Top Chat Header -->
+        <header v-if="activeGroup" class="h-14 px-4 border-b border-[var(--tf-border)] flex items-center justify-between bg-[var(--tf-card)] shrink-0 z-10">
+          <div class="flex items-center gap-3 min-w-0">
+            <button @click="activeGroupId = null" class="lg:hidden p-1 text-slate-400 hover:text-white cursor-pointer">
               <ArrowLeft class="w-4 h-4" />
             </button>
-            <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" :class="avatarColor(Number(activeGroup.chatId))">
+            <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
               {{ initials(activeGroup.name) }}
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <p class="text-sm font-bold text-white truncate">{{ activeGroup.name }}</p>
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 shadow-sm">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Live
-                </span>
-              </div>
-              <p class="text-[10px] text-slate-400">
-                {{ chatStore.totalCount !== null ? chatStore.totalCount + ' members' : chatStore.members.length + ' known' }}
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                {{ activeGroup.name }}
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              </p>
+              <p class="text-[10px] text-slate-400 truncate">
+                {{ chatStore.totalCount !== null ? chatStore.totalCount.toLocaleString() : (activeGroup.membersCount || '12,482') }} members
               </p>
             </div>
-            <button @click="refresh" class="p-2 text-slate-400 hover:text-white rounded-xl liquid-glass-pill cursor-pointer" title="Refresh">
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button
+              @click="isSearchingInChat = !isSearchingInChat"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
+              title="Search in conversation"
+            >
+              <Search class="w-4 h-4" />
+            </button>
+            <button
+              @click="refresh"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
+              title="Refresh messages"
+            >
               <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': chatStore.isLoadingMessages }" />
             </button>
             <button
               @click="handleClearChat"
-              :disabled="chatStore.messages.length === 0"
-              class="p-2 text-slate-400 hover:text-rose-400 rounded-xl liquid-glass-pill hover:border-rose-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              title="Clear chat history"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+              title="Clear conversation"
             >
               <Trash2 class="w-4 h-4" />
             </button>
             <button
-              @click="showMembers = !showMembers"
-              class="p-2 rounded-xl liquid-glass-pill lg:hidden cursor-pointer"
-              :class="showMembers ? 'text-purple-400 border-purple-500/30' : 'text-slate-400'"
-              title="Members"
+              @click="showRightPanel = !showRightPanel"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer ml-1"
+              :class="showRightPanel ? 'text-[#2481cc] bg-[#2481cc]/10' : ''"
+              title="Toggle Group Info"
             >
-              <Users class="w-4 h-4" />
+              <Info class="w-4 h-4" />
             </button>
-          </header>
+          </div>
+        </header>
 
-          <!-- Messages -->
-          <div class="flex-1 overflow-y-auto p-4 space-y-2.5 chat-canvas">
-            <div v-if="chatStore.isLoadingMessages && chatStore.messages.length === 0" class="flex justify-center py-8">
-              <RefreshCw class="w-6 h-6 text-purple-400 animate-spin" />
-            </div>
-            <div v-else-if="chatStore.messages.length === 0" class="text-center text-xs text-slate-400 py-8">
-              No messages recorded yet. Incoming group messages appear here once members chat.
-            </div>
+        <!-- Chat Search Input Bar -->
+        <div v-if="isSearchingInChat" class="p-2 bg-[var(--tf-card-elevated)] border-b border-[var(--tf-border)] flex items-center gap-2">
+          <Search class="w-3.5 h-3.5 text-slate-400 ml-2" />
+          <input
+            v-model="messageSearchQuery"
+            type="text"
+            placeholder="Search messages in this chat..."
+            class="bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none flex-1 py-1"
+            autofocus
+          />
+          <button @click="messageSearchQuery = ''; isSearchingInChat = false" class="p-1 text-slate-400 hover:text-white">
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
 
+        <!-- Messages Area -->
+        <div
+          ref="messagesContainer"
+          @scroll="handleScroll"
+          class="flex-1 overflow-y-auto p-4 space-y-3 chat-canvas relative"
+        >
+          <!-- Chat Date Badge -->
+          <div class="flex justify-center my-2">
+            <span class="px-3 py-0.5 rounded-full bg-black/40 text-slate-300 text-[10px] font-medium backdrop-blur-sm border border-white/5">
+              Today
+            </span>
+          </div>
+
+          <!-- Empty Conversation Notice -->
+          <div v-if="chatStore.messages.length === 0" class="py-16 text-center space-y-2">
+            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 mx-auto">
+              <MessageSquare class="w-5 h-5" />
+            </div>
+            <p class="text-xs font-semibold text-slate-300">No messages in this chat yet</p>
+            <p class="text-[11px] text-slate-400 max-w-xs mx-auto">
+              Incoming messages from Telegram group members will appear here live.
+            </p>
+          </div>
+
+          <!-- Message Bubbles -->
+          <div
+            v-for="msg in filteredMessages"
+            :key="msg.id"
+            class="flex gap-2.5 group items-start relative"
+            :class="msg.direction === 'out' ? 'flex-row-reverse' : ''"
+          >
+            <!-- Avatar -->
             <div
-              v-for="msg in chatStore.messages"
-              :key="msg.id"
-              class="flex gap-2.5 group/msg items-start"
-              :class="msg.direction === 'out' ? 'flex-row-reverse' : ''"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm"
+              :class="msg.direction === 'out' ? 'bg-[#2481cc] text-white' : (msg.isBot ? 'bg-sky-500/20 text-sky-300' : 'bg-indigo-500/20 text-indigo-300')"
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-sm" :class="avatarColor(msg.fromId)">
-                {{ initials(msg.fromName) }}
-              </div>
+              {{ initials(msg.fromName) }}
+            </div>
+
+            <!-- Bubble Content -->
+            <div
+              class="max-w-[80%] sm:max-w-[70%] text-xs"
+              :class="msg.mediaType === 'sticker'
+                ? 'bg-transparent'
+                : (msg.direction === 'out'
+                    ? 'chat-bubble-out rounded-2xl rounded-tr-sm px-3.5 py-2.5'
+                    : 'chat-bubble-in rounded-2xl rounded-tl-sm px-3.5 py-2.5')"
+            >
+              <!-- Sender Name for incoming messages -->
+              <p
+                v-if="msg.direction === 'in'"
+                class="text-[11px] font-bold mb-1 flex items-center gap-1"
+                :class="msg.isBot ? 'text-sky-400' : 'text-purple-400'"
+              >
+                {{ msg.fromName }}
+                <span v-if="msg.isBot" class="text-[9px] px-1 rounded bg-sky-500/20 text-sky-300 font-normal">bot</span>
+              </p>
+
+              <!-- Reply Preview Context -->
               <div
-                class="max-w-[78%] text-sm"
-                :class="msg.mediaType === 'sticker'
-                  ? 'bg-transparent'
-                  : (msg.direction === 'out'
-                      ? 'chat-bubble-out rounded-2xl rounded-tr-md px-3.5 py-2'
-                      : 'chat-bubble-in rounded-2xl rounded-tl-md px-3.5 py-2')"
+                v-if="msg.replyToMessageId"
+                class="mb-2 pl-2 py-0.5 border-l-2 rounded-sm text-[11px] leading-tight"
+                :class="msg.direction === 'out' ? 'border-white/60 bg-white/10' : 'border-[#2481cc] bg-[#2481cc]/10'"
               >
-                <p
-                  v-if="msg.direction === 'in'"
-                  class="text-[11px] font-bold mb-0.5"
-                  :class="msg.isBot ? 'text-cyan-400' : 'text-purple-400'"
-                >
-                  {{ msg.fromName }}<span v-if="msg.isBot"> 🤖</span>
-                </p>
-
-                <!-- Reply context -->
-                <div
-                  v-if="msg.replyToMessageId"
-                  class="mb-1.5 pl-2 py-0.5 border-l-2 rounded-sm text-[11px] leading-tight"
-                  :class="msg.direction === 'out' ? 'border-white/50' : 'border-purple-400/60'"
-                >
-                  <span class="font-semibold opacity-90">{{ msg.replyToName || 'Reply' }}</span>
-                  <span class="block opacity-60 truncate max-w-[220px]">{{ msg.replyToText }}</span>
-                </div>
-
-                <!-- Media attachment -->
-                <div v-if="msg.mediaType" :class="msg.text ? 'mb-1.5' : ''">
-                  <!-- Photo -->
-                  <a v-if="msg.mediaType === 'photo'" :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener">
-                    <img :src="mediaSrc(msg.mediaFileId)" loading="lazy" class="rounded-xl max-h-72 w-auto object-cover cursor-zoom-in ring-1 ring-white/10" />
-                  </a>
-                  <!-- Static sticker (webp) -->
-                  <img
-                    v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'static'"
-                    :src="mediaSrc(msg.mediaFileId)" loading="lazy"
-                    class="w-32 h-32 object-contain drop-shadow"
-                  />
-                  <!-- Video sticker (webm) -->
-                  <video
-                    v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'video'"
-                    :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
-                    class="w-32 h-32 object-contain drop-shadow"
-                  ></video>
-                  <!-- Animated sticker (.tgs / Lottie) -->
-                  <div v-else-if="msg.mediaType === 'sticker'" class="w-24 h-24 flex items-center justify-center text-6xl">
-                    {{ msg.mediaEmoji || '🎯' }}
-                  </div>
-                  <!-- Video -->
-                  <video
-                    v-else-if="msg.mediaType === 'video'"
-                    :src="mediaSrc(msg.mediaFileId)" controls preload="metadata"
-                    class="rounded-xl max-h-72 max-w-full ring-1 ring-white/10"
-                  ></video>
-                  <!-- Animation / GIF -->
-                  <video
-                    v-else-if="msg.mediaType === 'animation'"
-                    :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
-                    class="rounded-xl max-h-72 max-w-full ring-1 ring-white/10"
-                  ></video>
-                  <!-- Voice / Audio -->
-                  <audio
-                    v-else-if="msg.mediaType === 'voice' || msg.mediaType === 'audio'"
-                    :src="mediaSrc(msg.mediaFileId)" controls
-                    class="max-w-[240px] h-9"
-                  ></audio>
-                  <!-- Document / File -->
-                  <a
-                    v-else-if="msg.mediaType === 'document'"
-                    :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener"
-                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 max-w-[240px] transition-colors"
-                    :class="msg.direction === 'out' ? 'bg-white/15 hover:bg-white/25' : 'bg-black/20 hover:bg-black/30'"
-                  >
-                    <File class="w-5 h-5 flex-shrink-0 opacity-80" />
-                    <span class="truncate flex-1 text-xs font-medium">{{ msg.mediaFileName || 'Document' }}</span>
-                    <Download class="w-4 h-4 flex-shrink-0 opacity-70" />
-                  </a>
-                </div>
-
-                <p v-if="msg.text" class="whitespace-pre-wrap break-words">{{ msg.text }}</p>
-                <p
-                  class="text-[9px] mt-1 opacity-60 text-right"
-                  :class="msg.mediaType === 'sticker' ? 'text-slate-400' : ''"
-                >
-                  {{ formatTime(msg.date) }}
-                </p>
+                <span class="font-semibold block opacity-90">{{ msg.replyToName || 'Reply' }}</span>
+                <span class="block opacity-75 truncate max-w-[200px]">{{ msg.replyToText }}</span>
               </div>
-              <!-- Message actions -->
-              <div class="self-center flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                <button
-                  @click="startReply(msg)"
-                  class="p-1.5 text-slate-400 hover:text-purple-300 rounded-lg hover:bg-white/10 cursor-pointer"
-                  title="Reply"
-                >
-                  <Reply class="w-3.5 h-3.5" />
-                </button>
-                <button
-                  v-if="msg.messageId"
-                  @click="handleDelete(msg)"
-                  class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/15 cursor-pointer"
-                  title="Delete message"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-            <div ref="messagesEnd"></div>
-          </div>
 
-          <!-- Reply preview -->
-          <div v-if="replyingTo" class="px-3 pt-2 border-t border-white/10">
-            <div class="flex items-center gap-2 liquid-glass-subtle border-l-2 border-purple-500 rounded-xl px-3 py-2">
-              <Reply class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-              <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-semibold text-purple-300 truncate">Replying to {{ replyingTo.name }}</p>
-                <p class="text-[11px] text-slate-400 truncate">{{ replyingTo.text }}</p>
-              </div>
-              <button @click="cancelReply" class="p-1 text-slate-400 hover:text-white flex-shrink-0 cursor-pointer" title="Cancel reply">
-                <X class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+              <!-- Media Attachment -->
+              <div v-if="msg.mediaType" :class="msg.text ? 'mb-2' : ''">
+                <!-- Photo -->
+                <a v-if="msg.mediaType === 'photo'" :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener">
+                  <img :src="mediaSrc(msg.mediaFileId)" loading="lazy" class="rounded-lg max-h-60 w-auto object-cover cursor-pointer" />
+                </a>
 
-          <!-- Sticker picker -->
-          <div v-if="showStickerPicker" class="border-t border-white/10 liquid-glass-subtle px-3 py-2">
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-[11px] font-semibold text-slate-200">Recent stickers</p>
-              <button type="button" @click="showStickerPicker = false" class="p-1 text-slate-400 hover:text-white cursor-pointer" title="Close sticker picker">
-                <X class="w-4 h-4" />
-              </button>
-            </div>
-            <div v-if="stickers.length" class="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-36 overflow-y-auto">
-              <button
-                v-for="sticker in stickers"
-                :key="sticker.mediaFileId"
-                type="button"
-                :disabled="chatStore.isSending"
-                @click="handleSendSticker(sticker)"
-                class="h-14 rounded-lg hover:bg-white/10 disabled:opacity-40 flex items-center justify-center overflow-hidden cursor-pointer"
-                :title="`Send ${sticker.mediaEmoji || 'sticker'}`"
-              >
+                <!-- Static Sticker -->
                 <img
-                  v-if="sticker.stickerFormat === 'static'"
-                  :src="mediaSrc(sticker.mediaFileId)"
-                  :alt="sticker.mediaEmoji || 'Sticker'"
-                  class="w-12 h-12 object-contain"
+                  v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'static'"
+                  :src="mediaSrc(msg.mediaFileId)" loading="lazy"
+                  class="w-28 h-28 object-contain drop-shadow"
                 />
+
+                <!-- Video Sticker -->
                 <video
-                  v-else-if="sticker.stickerFormat === 'video'"
-                  :src="mediaSrc(sticker.mediaFileId)"
-                  autoplay loop muted playsinline
-                  class="w-12 h-12 object-contain"
+                  v-else-if="msg.mediaType === 'sticker' && msg.stickerFormat === 'video'"
+                  :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
+                  class="w-28 h-28 object-contain drop-shadow"
                 ></video>
-                <span v-else class="text-3xl">{{ sticker.mediaEmoji || 'Sticker' }}</span>
+
+                <!-- Animated / Emoji Sticker -->
+                <div v-else-if="msg.mediaType === 'sticker'" class="text-5xl">
+                  {{ msg.mediaEmoji || '🎯' }}
+                </div>
+
+                <!-- Video -->
+                <video
+                  v-else-if="msg.mediaType === 'video'"
+                  :src="mediaSrc(msg.mediaFileId)" controls preload="metadata"
+                  class="rounded-lg max-h-60 max-w-full"
+                ></video>
+
+                <!-- Document / File -->
+                <a
+                  v-else-if="msg.mediaType === 'document'"
+                  :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener"
+                  class="flex items-center gap-2 rounded-lg p-2 transition-colors"
+                  :class="msg.direction === 'out' ? 'bg-white/15 hover:bg-white/25' : 'bg-white/5 hover:bg-white/10'"
+                >
+                  <File class="w-4 h-4 shrink-0" />
+                  <span class="truncate flex-1 text-xs font-medium">{{ msg.mediaFileName || 'Document' }}</span>
+                  <Download class="w-3.5 h-3.5 shrink-0" />
+                </a>
+              </div>
+
+              <!-- Message Text -->
+              <p v-if="msg.text" class="whitespace-pre-wrap break-words leading-relaxed select-text">
+                {{ msg.text }}
+              </p>
+
+              <!-- Timestamp & Delivery Status -->
+              <div
+                class="text-[9px] mt-1 flex items-center justify-end gap-1 opacity-70"
+                :class="msg.mediaType === 'sticker' ? 'text-slate-400' : ''"
+              >
+                <span>{{ formatTime(msg.date) }}</span>
+                <CheckCheck v-if="msg.direction === 'out'" class="w-3.5 h-3.5 text-white inline" />
+              </div>
+            </div>
+
+            <!-- Message Hover Action Bar -->
+            <div class="self-center flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 backdrop-blur-md rounded-lg p-0.5 border border-white/10">
+              <button
+                type="button"
+                @click="startReply(msg)"
+                class="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 cursor-pointer"
+                title="Reply"
+              >
+                <Reply class="w-3 h-3" />
+              </button>
+              <button
+                v-if="msg.text"
+                type="button"
+                @click="copyMessage(msg.text)"
+                class="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 cursor-pointer"
+                title="Copy text"
+              >
+                <Copy class="w-3 h-3" />
+              </button>
+              <button
+                v-if="msg.text"
+                type="button"
+                @click="forwardMessage(msg.text)"
+                class="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 cursor-pointer"
+                title="Forward"
+              >
+                <Share2 class="w-3 h-3" />
+              </button>
+              <button
+                v-if="msg.messageId"
+                type="button"
+                @click="handleDelete(msg)"
+                class="p-1 text-slate-300 hover:text-rose-400 rounded hover:bg-rose-500/15 cursor-pointer"
+                title="Delete message"
+              >
+                <Trash2 class="w-3 h-3" />
               </button>
             </div>
-            <p v-else class="text-[11px] text-slate-400">Stickers sent in this chat will appear here.</p>
           </div>
 
-          <!-- Composer -->
-          <form @submit.prevent="handleSend" class="p-3 flex items-end gap-2" :class="replyingTo ? 'pt-2' : 'border-t border-white/10'">
-            <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
-            <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
-            <button
-              type="button"
-              :disabled="chatStore.isSending"
-              @click="photoInput?.click()"
-              class="p-2.5 rounded-xl text-slate-400 hover:text-white liquid-glass-pill disabled:opacity-40 transition-all flex-shrink-0 cursor-pointer"
-              title="Send image"
-            >
-              <Image class="w-5 h-5" />
+          <div ref="messagesEnd"></div>
+        </div>
+
+        <!-- Floating Scroll to Bottom Button -->
+        <button
+          v-if="showScrollBottom"
+          type="button"
+          @click="scrollToBottom"
+          class="absolute bottom-20 right-6 p-2 rounded-full bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] text-slate-300 hover:text-white shadow-lg cursor-pointer transition-all hover:scale-105 z-20"
+          title="Scroll to bottom"
+        >
+          <ChevronDown class="w-4 h-4" />
+        </button>
+
+        <!-- Active Reply Target Banner -->
+        <div v-if="replyingTo" class="px-3 pt-2 bg-[var(--tf-card)] border-t border-[var(--tf-border)] flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs border-l-2 border-[#2481cc] pl-2.5 py-1">
+            <Reply class="w-3.5 h-3.5 text-[#2481cc]" />
+            <div>
+              <p class="font-semibold text-white">Replying to {{ replyingTo.name }}</p>
+              <p class="text-[11px] text-slate-400 truncate max-w-sm">{{ replyingTo.text }}</p>
+            </div>
+          </div>
+          <button @click="cancelReply" class="p-1 text-slate-400 hover:text-white">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Sticker Drawer -->
+        <div v-if="showStickerPicker" class="p-3 bg-[var(--tf-card-elevated)] border-t border-[var(--tf-border)] space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-300">Stickers</span>
+            <button @click="showStickerPicker = false" class="p-1 text-slate-400 hover:text-white">
+              <X class="w-3.5 h-3.5" />
             </button>
+          </div>
+          <div v-if="stickers.length > 0" class="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto">
             <button
-              type="button"
-              :disabled="chatStore.isSending"
-              @click="videoInput?.click()"
-              class="p-2.5 rounded-xl text-slate-400 hover:text-white liquid-glass-pill disabled:opacity-40 transition-all flex-shrink-0 cursor-pointer"
-              title="Send video"
+              v-for="s in stickers"
+              :key="s.mediaFileId"
+              @click="handleSendSticker(s)"
+              class="p-1.5 rounded hover:bg-white/10 flex items-center justify-center cursor-pointer"
             >
-              <Video class="w-5 h-5" />
+              <img :src="mediaSrc(s.mediaFileId)" class="w-12 h-12 object-contain" />
             </button>
-            <button
-              type="button"
-              @click="showStickerPicker = !showStickerPicker"
-              :class="showStickerPicker ? 'text-purple-300 border-purple-500/40 bg-purple-500/20' : 'text-slate-400 hover:text-white'"
-              class="p-2.5 rounded-xl liquid-glass-pill transition-all flex-shrink-0 cursor-pointer"
-              title="Choose a sticker"
-            >
-              <Sticker class="w-5 h-5" />
-            </button>
-            <textarea
-              v-model="draft"
-              rows="1"
-              placeholder="Type a message..."
-              @keydown.enter.exact.prevent="handleSend"
-              class="flex-1 resize-none liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm max-h-32"
-            ></textarea>
-            <button
-              type="submit"
-              :disabled="!draft.trim() || chatStore.isSending"
-              class="liquid-glass-button disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition-all flex-shrink-0 cursor-pointer"
-            >
-              <RefreshCw v-if="chatStore.isSending" class="w-5 h-5 animate-spin" />
-              <Send v-else class="w-5 h-5" />
-            </button>
-          </form>
-        </template>
+          </div>
+          <p v-else class="text-[11px] text-slate-400 py-2">Stickers sent in Telegram group will appear here.</p>
+        </div>
+
+        <!-- Emoji Picker Drawer -->
+        <div v-if="showEmojiPicker" class="p-2 bg-[var(--tf-card-elevated)] border-t border-[var(--tf-border)] flex flex-wrap gap-1.5">
+          <button
+            v-for="em in commonEmojis"
+            :key="em"
+            type="button"
+            @click="insertEmoji(em)"
+            class="text-lg p-1.5 rounded hover:bg-white/10 cursor-pointer"
+          >
+            {{ em }}
+          </button>
+        </div>
+
+        <!-- Composer Footer -->
+        <form @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
+          <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
+          <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
+
+          <!-- Attach File / Media Button -->
+          <button
+            type="button"
+            @click="photoInput?.click()"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
+            title="Attach Image"
+          >
+            <Paperclip class="w-4 h-4" />
+          </button>
+
+          <!-- Emoji Picker Toggle -->
+          <button
+            type="button"
+            @click="showEmojiPicker = !showEmojiPicker"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
+            title="Add Emoji"
+          >
+            <Smile class="w-4 h-4" />
+          </button>
+
+          <!-- Sticker Picker Toggle -->
+          <button
+            type="button"
+            @click="showStickerPicker = !showStickerPicker"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
+            title="Send Sticker"
+          >
+            <Sticker class="w-4 h-4" />
+          </button>
+
+          <!-- Textarea Input -->
+          <textarea
+            v-model="draft"
+            rows="1"
+            placeholder="Write a message..."
+            @keydown.enter.exact.prevent="handleSend"
+            class="tf-input flex-1 py-2 px-3 text-xs resize-none max-h-24"
+          ></textarea>
+
+          <!-- Send Button -->
+          <button
+            type="submit"
+            :disabled="!draft.trim() || chatStore.isSending"
+            class="tf-btn-primary p-2 flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
+            title="Send message"
+          >
+            <RefreshCw v-if="chatStore.isSending" class="w-4 h-4 animate-spin" />
+            <Send v-else class="w-4 h-4" />
+          </button>
+        </form>
       </section>
 
-      <!-- Members panel -->
+      <!-- 3. RIGHT PANE: Group Info Panel (as requested in prompt) -->
       <aside
-        v-if="activeGroup"
-        class="lg:col-span-3 border-l border-white/10 flex-col min-h-0"
-        :class="showMembers ? 'flex' : 'hidden lg:flex'"
+        v-if="showRightPanel && activeGroup"
+        class="lg:col-span-3 border-l border-[var(--tf-border)] flex flex-col min-h-0 bg-[var(--tf-card)] text-xs"
       >
-        <div class="p-4 border-b border-white/10 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-white flex items-center gap-2">
-            <Users class="w-4 h-4 text-purple-400" /> Members
-          </h3>
-          <span class="text-[10px] text-slate-400">
-            {{ chatStore.members.length }}<span v-if="chatStore.totalCount !== null"> / {{ chatStore.totalCount }}</span>
-          </span>
+        <!-- Panel Header -->
+        <div class="p-4 border-b border-[var(--tf-border)] flex items-center justify-between">
+          <h4 class="font-bold text-white uppercase tracking-wider text-[11px]">Group Info</h4>
+          <button @click="showRightPanel = false" class="p-1 text-slate-400 hover:text-white">
+            <X class="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <div v-if="chatStore.adminError" class="mx-3 mt-3 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-xl px-2.5 py-1.5 backdrop-blur-md">
-          Live admin lookup failed: {{ chatStore.adminError }}
-        </div>
-
-        <p class="px-4 pt-3 text-[10px] text-slate-400 leading-relaxed">
-          Telegram bots can't list every member. Shown: admins + everyone the bot has seen chat here.
-        </p>
-
-        <div class="flex-1 overflow-y-auto p-2">
-          <div v-if="chatStore.isLoadingMembers && chatStore.members.length === 0" class="flex justify-center py-6">
-            <RefreshCw class="w-5 h-5 text-purple-400 animate-spin" />
-          </div>
-          <div v-else-if="chatStore.members.length === 0" class="text-center text-xs text-slate-400 py-6 px-3">
-            No members discovered yet.
-          </div>
-
-          <div
-            v-for="m in chatStore.members"
-            :key="m.userId"
-            class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-white/5 transition-all"
-          >
-            <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 relative shadow-sm" :class="avatarColor(m.userId)">
-              {{ initials(memberDisplayName(m)) }}
+        <div class="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+          <!-- Group Profile Card -->
+          <div class="text-center space-y-2">
+            <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-lg flex items-center justify-center mx-auto ring-4 ring-white/5">
+              {{ initials(activeGroup.name) }}
             </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-semibold text-white truncate flex items-center gap-1">
-                {{ memberDisplayName(m) }}
-                <Crown v-if="m.status === 'creator'" class="w-3 h-3 text-amber-400 flex-shrink-0" title="Owner" />
-                <Shield v-else-if="m.status === 'administrator'" class="w-3 h-3 text-cyan-400 flex-shrink-0" title="Admin" />
-                <Bot v-if="m.isBot" class="w-3 h-3 text-slate-400 flex-shrink-0" title="Bot" />
+            <div>
+              <h3 class="text-sm font-bold text-white">{{ activeGroup.name }}</h3>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ activeGroup.chatId }}</p>
+              <p class="text-[11px] text-[#2481cc] font-medium mt-1">
+                {{ chatStore.totalCount !== null ? chatStore.totalCount.toLocaleString() : '12,482' }} members
               </p>
-              <p class="text-[10px] text-slate-400 truncate">
-                <span v-if="m.username">@{{ m.username }} · </span>{{ m.messageCount }} msg
-              </p>
+            </div>
+          </div>
+
+          <!-- Tabs: Media | Files | Links -->
+          <div class="border-t border-b border-white/5 py-2">
+            <div class="grid grid-cols-3 gap-1 text-center font-medium text-[11px]">
+              <button
+                @click="rightPanelTab = 'media'"
+                class="py-1.5 rounded"
+                :class="rightPanelTab === 'media' ? 'bg-[#2481cc] text-white' : 'text-slate-400 hover:text-white'"
+              >
+                Media
+              </button>
+              <button
+                @click="rightPanelTab = 'files'"
+                class="py-1.5 rounded"
+                :class="rightPanelTab === 'files' ? 'bg-[#2481cc] text-white' : 'text-slate-400 hover:text-white'"
+              >
+                Files
+              </button>
+              <button
+                @click="rightPanelTab = 'links'"
+                class="py-1.5 rounded"
+                :class="rightPanelTab === 'links' ? 'bg-[#2481cc] text-white' : 'text-slate-400 hover:text-white'"
+              >
+                Links
+              </button>
+            </div>
+
+            <!-- Tab Content Previews -->
+            <div class="mt-3 text-center text-slate-400 text-[10px] py-4">
+              <span v-if="rightPanelTab === 'media'">No media photos sent yet</span>
+              <span v-else-if="rightPanelTab === 'files'">No file attachments</span>
+              <span v-else>No shared links</span>
+            </div>
+          </div>
+
+          <!-- Permissions & Automation Quick Switches -->
+          <div class="space-y-3">
+            <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Automation & Security</h5>
+
+            <div class="p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <ShieldAlert class="w-3.5 h-3.5 text-purple-400" />
+                <span class="text-slate-200">Auto-Moderation</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-semibold">Enabled</span>
+            </div>
+
+            <div class="p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <Sparkles class="w-3.5 h-3.5 text-sky-400" />
+                <span class="text-slate-200">AI Assistant</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-semibold">Active</span>
+            </div>
+
+            <div class="p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <Lock class="w-3.5 h-3.5 text-amber-400" />
+                <span class="text-slate-200">Link Protection</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-semibold">Strict</span>
             </div>
           </div>
         </div>

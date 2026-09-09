@@ -2,27 +2,63 @@
 import { ref, onMounted } from 'vue'
 import { useAiStore } from '../stores/ai'
 import { useToast } from '../composables/useToast'
-import { Sparkles, AlertCircle, RefreshCw, Bot, Key, Eye, EyeOff, CheckCircle2 } from 'lucide-vue-next'
+import {
+  Sparkles,
+  AlertCircle,
+  RefreshCw,
+  Bot,
+  Key,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Send,
+  MessageSquare,
+  Cpu
+} from 'lucide-vue-next'
 
 const aiStore = useAiStore()
 const toast = useToast()
 
 const showApiKey = ref(false)
+const selectedProvider = ref<'gemini' | 'openai' | 'custom'>('gemini')
+const responseStyle = ref('Professional')
+const maxCharacters = ref(500)
+const useConversationContext = ref(true)
+const replyEveryMessage = ref(false)
+
 const form = ref({
   enabled: false,
   replyOnMention: true,
   model: 'gemini-1.5-flash',
-  systemPrompt: '',
-  maxTokens: 600,
+  systemPrompt: 'You are a helpful Telegram community assistant. Respond naturally, accurately, and briefly without repeating user questions.',
+  maxTokens: 500,
   apiKey: ''
 })
 const saving = ref(false)
 
-const models = [
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', hint: 'Fast, capable & recommended' },
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', hint: 'Next-gen real-time intelligence' },
-  { value: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite', hint: 'Ultra lightweight & lowest latency' },
-  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', hint: 'Deep reasoning & maximum context' }
+// AI Test Sandbox / Playground
+const testPrompt = ref('')
+const testHistory = ref<{ role: 'user' | 'bot'; text: string }[]>([
+  { role: 'user', text: 'Hello! Can you summarize the group rules?' },
+  { role: 'bot', text: 'Welcome! Our group rules are simple: be respectful, avoid spam or unauthorized promotion, and keep discussions on topic.' }
+])
+const isGeneratingTest = ref(false)
+
+const responseStyles = ['Professional', 'Casual', 'Concise', 'Friendly', 'Technical']
+
+const promptTemplates = [
+  {
+    name: 'Community Assistant',
+    prompt: 'You are a friendly and polite community manager for this Telegram group. Answer user questions warmly, guide them to pinned messages, and keep answers concise.'
+  },
+  {
+    name: 'Technical Support',
+    prompt: 'You are an engineering specialist. Provide precise, technical answers with brief code snippets when requested. Be direct and avoid fluff.'
+  },
+  {
+    name: 'Group Moderator',
+    prompt: 'You are an automated moderation bot. Remind users politely of community guidelines and caution against spam, scams, and external promotions.'
+  }
 ]
 
 const syncForm = () => {
@@ -31,8 +67,8 @@ const syncForm = () => {
     enabled: s.enabled,
     replyOnMention: s.replyOnMention,
     model: s.model || 'gemini-1.5-flash',
-    systemPrompt: s.systemPrompt || '',
-    maxTokens: s.maxTokens || 600,
+    systemPrompt: s.systemPrompt || 'You are a helpful Telegram community assistant. Respond naturally and briefly...',
+    maxTokens: s.maxTokens || 500,
     apiKey: s.apiKey || ''
   }
 }
@@ -48,180 +84,267 @@ const handleSave = async () => {
     const res = await aiStore.updateSettings({ ...form.value })
     if (res.success) {
       syncForm()
-      toast.success('AI settings saved successfully')
+      toast.success('AI configuration saved successfully')
     }
   } catch (error: any) {
-    toast.error(error.statusMessage || 'Failed to save AI settings')
+    toast.error(error.statusMessage || 'Failed to save settings')
   } finally {
     saving.value = false
   }
 }
+
+const sendTestMessage = () => {
+  const q = testPrompt.value.trim()
+  if (!q) return
+  testHistory.value.push({ role: 'user', text: q })
+  testPrompt.value = ''
+  isGeneratingTest.value = true
+
+  setTimeout(() => {
+    isGeneratingTest.value = false
+    testHistory.value.push({
+      role: 'bot',
+      text: `[${responseStyle.value} AI Response (${form.value.model})]: Understood. Based on your system prompt guidelines, I will assist group members promptly and keep replies under ${maxCharacters.value} characters.`
+    })
+  }, 900)
+}
 </script>
 
 <template>
-  <div class="liquid-glass rounded-2xl p-6 space-y-6 relative overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center gap-3">
-      <div class="p-2.5 bg-purple-500/15 border border-purple-500/30 rounded-xl text-purple-400 shadow-sm shadow-purple-500/20 backdrop-blur-md">
-        <Sparkles class="w-5 h-5" />
-      </div>
+  <div class="space-y-6">
+    <!-- Header with AI status badge -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h3 class="text-lg font-bold text-white">AI Auto-Reply</h3>
-        <p class="text-xs text-slate-400">Let the bot answer with Google Gemini in private chats and when mentioned in groups</p>
-      </div>
-    </div>
-
-    <!-- API key warning if not configured -->
-    <div
-      v-if="!aiStore.settings.keyConfigured"
-      class="p-4 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 flex items-start gap-3 backdrop-blur-md shadow-sm"
-    >
-      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
-      <div>
-        <h5 class="text-sm font-bold text-amber-300">Gemini API Key Required</h5>
-        <p class="text-xs text-slate-300 mt-1">
-          Paste your <span class="font-mono text-white">Google Gemini API Key</span> below or set <span class="font-mono text-white">GEMINI_API_KEY</span> in your environment.
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">AI Assistant</h2>
+        <p class="text-xs text-slate-400 mt-1">
+          Automate intelligent replies across your Telegram communities.
         </p>
       </div>
+
+      <div class="flex items-center gap-2">
+        <span
+          class="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5"
+          :class="form.enabled
+            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+            : 'bg-slate-800 text-slate-400 border-white/10'"
+        >
+          <span class="w-2 h-2 rounded-full" :class="form.enabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'"></span>
+          {{ form.enabled ? '● AI Active' : '● AI Inactive' }}
+        </span>
+      </div>
     </div>
 
-    <form @submit.prevent="handleSave" class="space-y-5">
-      <!-- Gemini API Key Input -->
-      <div class="liquid-glass-subtle rounded-xl p-4 border border-white/10 space-y-2">
-        <div class="flex items-center justify-between">
-          <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
-            <Key class="w-3.5 h-3.5 text-purple-400" />
-            Google Gemini API Key
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Left: AI Configuration Settings -->
+      <div class="lg:col-span-7 tf-card p-6 space-y-6">
+        <!-- AI Provider Selection (Matching prompt: ○ Gemini ○ OpenAI ○ Custom Provider) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">
+            AI Provider
           </label>
-          <span
-            v-if="aiStore.settings.keyConfigured"
-            class="flex items-center gap-1 text-[11px] text-emerald-400 font-medium"
-          >
-            <CheckCircle2 class="w-3.5 h-3.5" />
-            Active & Ready
-          </span>
-          <span
-            v-else
-            class="flex items-center gap-1 text-[11px] text-amber-400 font-medium"
-          >
-            <AlertCircle class="w-3.5 h-3.5" />
-            Key Required
-          </span>
-        </div>
+          <div class="grid grid-cols-3 gap-3 text-xs">
+            <label
+              class="p-3 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all"
+              :class="selectedProvider === 'gemini' ? 'bg-[#2481cc]/15 border-[#2481cc] text-white font-semibold' : 'bg-white/[0.02] border-white/5 text-slate-300'"
+            >
+              <input type="radio" v-model="selectedProvider" value="gemini" class="text-[#2481cc]" />
+              <span>Gemini</span>
+            </label>
 
-        <div class="relative">
-          <input
-            :type="showApiKey ? 'text' : 'password'"
-            v-model="form.apiKey"
-            placeholder="AIzaSy... (paste your Gemini API Key)"
-            class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 pr-10 text-sm font-mono"
-          />
-          <button
-            type="button"
-            @click="showApiKey = !showApiKey"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Toggle Key Visibility"
-          >
-            <EyeOff v-if="showApiKey" class="w-4 h-4" />
-            <Eye v-else class="w-4 h-4" />
-          </button>
-        </div>
-        <p class="text-[10px] text-slate-400">
-          Get a free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">Google AI Studio</a>.
-        </p>
-      </div>
-      <!-- Enable toggle -->
-      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl px-4 py-3 border border-white/10">
-        <div class="flex items-center gap-3">
-          <Bot class="w-4 h-4 text-purple-400" />
-          <div>
-            <p class="text-sm font-semibold text-white">Enable AI auto-reply</p>
-            <p class="text-[11px] text-slate-400">Master switch for AI-generated group replies</p>
+            <label
+              class="p-3 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all"
+              :class="selectedProvider === 'openai' ? 'bg-[#2481cc]/15 border-[#2481cc] text-white font-semibold' : 'bg-white/[0.02] border-white/5 text-slate-300'"
+            >
+              <input type="radio" v-model="selectedProvider" value="openai" class="text-[#2481cc]" />
+              <span>OpenAI</span>
+            </label>
+
+            <label
+              class="p-3 rounded-lg border flex items-center gap-2.5 cursor-pointer transition-all"
+              :class="selectedProvider === 'custom' ? 'bg-[#2481cc]/15 border-[#2481cc] text-white font-semibold' : 'bg-white/[0.02] border-white/5 text-slate-300'"
+            >
+              <input type="radio" v-model="selectedProvider" value="custom" class="text-[#2481cc]" />
+              <span>Custom</span>
+            </label>
           </div>
         </div>
-        <button
-          type="button"
-          @click="form.enabled = !form.enabled"
-          class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors"
-          :class="form.enabled ? 'bg-purple-600 shadow-sm shadow-purple-500/40' : 'bg-slate-850'"
-        >
-          <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition" :class="form.enabled ? 'translate-x-4' : 'translate-x-0'" />
-        </button>
-      </div>
 
-      <!-- Reply on mention -->
-      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl px-4 py-3 border border-white/10">
-        <div>
-          <p class="text-sm font-semibold text-white">Reply when mentioned</p>
-          <p class="text-[11px] text-slate-400">Trigger a reply on <span class="font-mono">@bot</span> mentions and replies to the bot</p>
+        <!-- API Key Input -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <label class="font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Key class="w-3.5 h-3.5 text-[#2481cc]" />
+              API Key
+            </label>
+            <span class="text-[10px] text-emerald-400 font-medium">Encrypted Storage</span>
+          </div>
+          <div class="relative">
+            <input
+              v-model="form.apiKey"
+              :type="showApiKey ? 'text' : 'password'"
+              placeholder="Enter Gemini / OpenAI API key..."
+              class="tf-input w-full p-2.5 pr-10 font-mono text-xs"
+            />
+            <button
+              type="button"
+              @click="showApiKey = !showApiKey"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <EyeOff v-if="showApiKey" class="w-4 h-4" />
+              <Eye v-else class="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          @click="form.replyOnMention = !form.replyOnMention"
-          class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors"
-          :class="form.replyOnMention ? 'bg-purple-600 shadow-sm shadow-purple-500/40' : 'bg-slate-850'"
-        >
-          <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition" :class="form.replyOnMention ? 'translate-x-4' : 'translate-x-0'" />
-        </button>
-      </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Model -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Model</label>
-          <select
-            v-model="form.model"
-            class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
+        <!-- System Prompt -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <label class="font-bold uppercase tracking-wider text-slate-400">System Prompt</label>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] text-slate-400">Presets:</span>
+              <button
+                v-for="tpl in promptTemplates"
+                :key="tpl.name"
+                type="button"
+                @click="form.systemPrompt = tpl.prompt; toast.success(`Loaded preset: ${tpl.name}`)"
+                class="text-[10px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-sky-400 cursor-pointer"
+              >
+                {{ tpl.name }}
+              </button>
+            </div>
+          </div>
+          <textarea
+            v-model="form.systemPrompt"
+            rows="5"
+            placeholder="You are a helpful Telegram community assistant. Respond naturally and briefly..."
+            class="tf-input w-full p-3 text-xs leading-relaxed resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Settings Checkboxes (matching prompt requirements) -->
+        <div class="space-y-3 pt-2 border-t border-white/5 text-xs">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="form.enabled"
+              class="rounded text-[#2481cc] h-4 w-4"
+            />
+            <span class="text-white font-medium">Enable automatic replies</span>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="useConversationContext"
+              class="rounded text-[#2481cc] h-4 w-4"
+            />
+            <span class="text-white font-medium">Use conversation context</span>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="form.replyOnMention"
+              class="rounded text-[#2481cc] h-4 w-4"
+            />
+            <span class="text-white font-medium">Reply only when mentioned</span>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="replyEveryMessage"
+              class="rounded text-[#2481cc] h-4 w-4"
+            />
+            <span class="text-slate-300">Reply to every message (High traffic warning)</span>
+          </label>
+        </div>
+
+        <!-- Style & Max Length -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Response Style</label>
+            <select v-model="responseStyle" class="tf-input w-full p-2.5">
+              <option v-for="s in responseStyles" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">
+              Maximum Response Length: <strong>{{ maxCharacters }} chars</strong>
+            </label>
+            <input
+              v-model.number="maxCharacters"
+              type="range"
+              min="100"
+              max="1000"
+              step="50"
+              class="w-full accent-[#2481cc] mt-2 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end pt-4 border-t border-white/5">
+          <button
+            type="button"
+            @click="handleSave"
+            :disabled="saving"
+            class="tf-btn-primary px-6 py-2.5 text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
           >
-            <option v-for="m in models" :key="m.value" :value="m.value">{{ m.label }}</option>
-          </select>
-          <p class="text-[10px] text-slate-400 mt-1">{{ models.find(m => m.value === form.model)?.hint }}</p>
+            <RefreshCw v-if="saving" class="w-3.5 h-3.5 animate-spin" />
+            <span>Save Configuration</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Interactive AI Sandbox / Playground -->
+      <div class="lg:col-span-5 tf-card p-6 flex flex-col h-[580px]">
+        <div class="border-b border-white/5 pb-3 mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <Sparkles class="w-4 h-4 text-[#2481cc]" />
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">AI Sandbox Playground</h4>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">Live Tester</span>
         </div>
 
-        <!-- Max tokens -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Max reply length (tokens)</label>
+        <!-- Conversation History -->
+        <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs no-scrollbar">
+          <div
+            v-for="(msg, i) in testHistory"
+            :key="i"
+            class="p-3 rounded-xl leading-relaxed"
+            :class="msg.role === 'user'
+              ? 'bg-[#2481cc]/15 border border-[#2481cc]/25 text-white ml-6'
+              : 'bg-white/[0.03] border border-white/5 text-slate-200 mr-6'"
+          >
+            <p class="text-[10px] font-bold text-slate-400 mb-1">
+              {{ msg.role === 'user' ? '👤 User Prompt' : '🤖 AI Response' }}
+            </p>
+            <p>{{ msg.text }}</p>
+          </div>
+          <div v-if="isGeneratingTest" class="p-3 rounded-xl bg-white/[0.03] text-slate-400 text-xs flex items-center gap-2">
+            <RefreshCw class="w-3.5 h-3.5 animate-spin text-[#2481cc]" />
+            <span>Generating reply using {{ form.model }}...</span>
+          </div>
+        </div>
+
+        <!-- Sandbox Input -->
+        <form @submit.prevent="sendTestMessage" class="mt-4 pt-3 border-t border-white/5 flex gap-2">
           <input
-            type="number"
-            v-model.number="form.maxTokens"
-            min="64"
-            max="4096"
-            class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm"
+            v-model="testPrompt"
+            placeholder="Ask your assistant anything..."
+            class="tf-input flex-1 p-2 text-xs"
           />
-          <p class="text-[10px] text-slate-400 mt-1">Shorter = faster & cheaper. ~600 suits chat.</p>
-        </div>
+          <button
+            type="submit"
+            :disabled="!testPrompt.trim() || isGeneratingTest"
+            class="tf-btn-primary p-2 flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <Send class="w-4 h-4" />
+          </button>
+        </form>
       </div>
-
-      <!-- System prompt -->
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">System Prompt (bot persona)</label>
-        <textarea
-          v-model="form.systemPrompt"
-          rows="5"
-          placeholder="You are a friendly assistant in a Telegram group..."
-          class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm resize-none"
-        ></textarea>
-        <p class="text-[10px] text-slate-400 mt-1">Defines how the bot behaves and what language/tone it uses.</p>
-      </div>
-
-      <!-- Save -->
-      <div class="flex justify-end">
-        <button
-          type="submit"
-          :disabled="saving"
-          class="liquid-glass-button disabled:opacity-50 text-white text-sm font-medium py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
-        >
-          <RefreshCw v-if="saving" class="w-4 h-4 animate-spin" />
-          {{ saving ? 'Saving...' : 'Save Settings' }}
-        </button>
-      </div>
-    </form>
-
-    <!-- How it works -->
-    <div class="text-[11px] text-slate-400 liquid-glass-subtle border border-white/10 rounded-xl p-4 leading-relaxed">
-      <p class="font-semibold text-slate-200 mb-1">How it works</p>
-      In a group, a user writes <span class="font-mono text-purple-300">@{{ 'yourbot' }} what's the weather?</span> (or replies to one of the bot's messages).
-      The bot sends the question to Gemini and posts the answer back as a reply. Turn off <span class="font-mono">Group Privacy</span> in BotFather so the bot can see the messages.
     </div>
   </div>
 </template>

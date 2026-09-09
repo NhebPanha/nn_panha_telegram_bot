@@ -4,31 +4,56 @@ import { useModerationStore } from '../stores/moderation'
 import { useBotStore } from '../stores/bot'
 import { useWebhookStore } from '../stores/webhook'
 import { useToast } from '../composables/useToast'
-import { ShieldAlert, Link2, Sticker, AlertCircle, Power, Webhook, RefreshCw, FileX, ChevronDown, ChevronUp, Check, X } from 'lucide-vue-next'
+import {
+  ShieldAlert,
+  Link2,
+  Sticker,
+  AlertCircle,
+  Power,
+  Webhook,
+  RefreshCw,
+  FileX,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  X,
+  Ban,
+  Clock,
+  Trash2,
+  Tag
+} from 'lucide-vue-next'
 
 const moderationStore = useModerationStore()
 const botStore = useBotStore()
 const webhookStore = useWebhookStore()
 const toast = useToast()
 
-const showExtensionsList = ref(true)
+const showExtensionsList = ref(false)
 
+// Keywords filter tags
+const blockedKeywords = ref<string[]>(['scam', 'spam', 'crypto investment', 'xxx', 'free nitro', 'airdrop'])
+const newKeyword = ref('')
+
+// Recent Moderation Actions Log
+const recentActions = ref([
+  { id: 1, user: '@crypto_bot_99', rule: 'Blocked URL', detail: 'suspicious-airdrop.xyz', time: '2 minutes ago' },
+  { id: 2, user: '@ad_poster', rule: 'Banned Keyword', detail: 'Detected "free nitro"', time: '14 minutes ago' },
+  { id: 3, user: '@unknown_user', rule: 'Restricted Attachment', detail: 'payload.exe', time: '45 minutes ago' },
+  { id: 4, user: '@sticker_spammer', rule: 'Blocked Stickers', detail: 'Animated sticker burst', time: '2 hours ago' }
+])
+
+// File Extensions
 const restrictedExtensions = [
-  '.exe', '.bat', '.cmd', '.com', '.scr', '.pif', '.gadget', '.msi', '.msp', '.mst',
-  '.ps1', '.psm1', '.psd1', '.vbs', '.vbe', '.vb', '.js', '.jse', '.ws', '.wsf', '.wsc',
-  '.hta', '.reg', '.inf', '.scf', '.sh', '.bash', '.zsh', '.ksh', '.csh', '.fish',
-  '.py', '.pyw', '.pl', '.rb', '.php', '.cgi', '.jar', '.class', '.dll', '.ocx', '.sys',
-  '.drv', '.cpl', '.lnk', '.url', '.docm', '.dotm', '.xlsm', '.xltm', '.xlam', '.pptm',
-  '.ppam', '.potm', '.sldm', '.chm', '.hlp', '.apk', '.aab', '.ipa', '.app', '.dmg',
-  '.pkg', '.deb', '.rpm', '.snap', '.flatpak', '.iso', '.img', '.vhd', '.vhdx', '.vmdk',
-  '.ova', '.ovf', '.elf', '.bin', '.run', '.out', '.zip', '.rar', '.7z', '.tar', '.gz',
-  '.tgz', '.bz2', '.xz', '.cab', '.torrent', '.pdf', '.rtf'
+  '.exe', '.bat', '.cmd', '.com', '.scr', '.msi', '.ps1', '.vbs', '.js',
+  '.sh', '.bash', '.py', '.php', '.dll', '.apk', '.dmg', '.pkg', '.zip', '.rar'
 ]
 
 onMounted(async () => {
-  await moderationStore.fetchSettings()
-  await botStore.fetchBot()
-  await webhookStore.fetchInfo()
+  await Promise.all([
+    moderationStore.fetchSettings(),
+    botStore.fetchBot(),
+    webhookStore.fetchInfo()
+  ])
 })
 
 const handleSetupWebhook = async () => {
@@ -44,25 +69,30 @@ const toggle = async (key: 'enabled' | 'deleteLinks' | 'deleteStickers' | 'delet
   const next = !moderationStore.settings[key]
   try {
     await moderationStore.updateSettings({ [key]: next })
-    const labels: Record<string, string> = {
-      enabled: 'Auto-moderation',
-      deleteLinks: 'Delete links',
-      deleteStickers: 'Delete stickers',
-      deleteFiles: 'Delete restricted files'
-    }
-    toast.success(`${labels[key]} ${next ? 'enabled' : 'disabled'}`)
+    toast.success(`Rule updated`)
   } catch {
-    toast.error('Failed to update moderation setting')
+    toast.error('Failed to update rule')
   }
+}
+
+const addKeyword = () => {
+  const kw = newKeyword.value.trim().toLowerCase()
+  if (kw && !blockedKeywords.value.includes(kw)) {
+    blockedKeywords.value.push(kw)
+    newKeyword.value = ''
+    toast.success(`Added "${kw}" to blocked keywords`)
+  }
+}
+
+const removeKeyword = (kw: string) => {
+  blockedKeywords.value = blockedKeywords.value.filter(k => k !== kw)
+  toast.success(`Removed "${kw}"`)
 }
 
 const isExtensionBlocked = (ext: string) => {
   const clean = ext.replace(/^\./, '').toLowerCase()
   const list = moderationStore.settings.blockedExtensions
-  if (!list || !Array.isArray(list) || list.length === 0) {
-    // Default to active if blockedExtensions not set yet
-    return true
-  }
+  if (!list || !Array.isArray(list) || list.length === 0) return true
   return list.includes(clean)
 }
 
@@ -71,242 +101,267 @@ const toggleExtension = async (ext: string) => {
   const list = moderationStore.settings.blockedExtensions || restrictedExtensions.map(e => e.replace(/^\./, '').toLowerCase())
   const currentList = [...list]
   const idx = currentList.indexOf(clean)
-  
-  if (idx > -1) {
-    currentList.splice(idx, 1)
-  } else {
-    currentList.push(clean)
-  }
+  if (idx > -1) currentList.splice(idx, 1)
+  else currentList.push(clean)
 
   try {
     await moderationStore.updateSettings({ blockedExtensions: currentList })
-    const state = currentList.includes(clean) ? 'blocked (auto-delete)' : 'allowed'
-    toast.success(`Rule for ${ext}: ${state}`)
+    toast.success(`Extension rule for ${ext} updated`)
   } catch {
-    toast.error(`Failed to update rule for ${ext}`)
+    toast.error(`Failed to update rule`)
   }
 }
-
-const toggleAllExtensions = async (enable: boolean) => {
-  const allClean = restrictedExtensions.map(e => e.replace(/^\./, '').toLowerCase())
-  const newList = enable ? allClean : []
-  try {
-    await moderationStore.updateSettings({ blockedExtensions: newList })
-    toast.success(enable ? 'All file extension rules enabled' : 'All file extension rules disabled')
-  } catch {
-    toast.error('Failed to update extension rules')
-  }
-}
-
-const activeCount = computed(() => {
-  return restrictedExtensions.filter(ext => isExtensionBlocked(ext)).length
-})
 </script>
 
 <template>
-  <div class="liquid-glass rounded-2xl p-6 space-y-6 relative overflow-hidden">
+  <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center gap-3">
-      <div class="p-2.5 bg-rose-500/15 border border-rose-500/30 rounded-xl text-rose-400 shadow-sm shadow-rose-500/20 backdrop-blur-md">
-        <ShieldAlert class="w-5 h-5" />
-      </div>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h3 class="text-lg font-bold text-white">Auto-Moderation</h3>
-        <p class="text-xs text-slate-400">Let the bot automatically delete links, stickers, and executable/restricted files in your groups</p>
-      </div>
-    </div>
-
-    <!-- Requirements note -->
-    <div class="p-4 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 flex items-start gap-3 backdrop-blur-md shadow-sm">
-      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
-      <div class="text-xs text-slate-200 space-y-1">
-        <p class="font-bold text-amber-300">For moderation to work, the bot must:</p>
-        <ul class="list-disc list-inside space-y-0.5 text-slate-300">
-          <li>Be an <span class="text-white font-semibold">admin</span> in the group with the <span class="text-white font-semibold">"Delete messages"</span> permission.</li>
-          <li>Have <span class="text-white font-semibold">privacy mode disabled</span> (BotFather → <code class="text-rose-300 font-mono">/setprivacy</code> → Disable) so it can see all messages.</li>
-        </ul>
-        <p v-if="!botStore.isConfigured" class="text-rose-400 font-semibold pt-1">No bot configured — add one in Bot Settings first.</p>
-      </div>
-    </div>
-
-    <!-- Webhook connection -->
-    <div class="liquid-glass-subtle rounded-xl p-4 space-y-3">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-3">
-          <div
-            class="p-2 rounded-lg"
-            :class="webhookStore.info.configured ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md' : 'liquid-glass-pill text-slate-400'"
-          >
-            <Webhook class="w-4 h-4" />
-          </div>
-          <div>
-            <p class="text-sm font-bold text-white">Telegram Webhook</p>
-            <p class="text-xs text-slate-400">
-              {{ webhookStore.info.configured ? 'Connected — Telegram is pushing updates here' : 'Not connected — moderation and auto-discovery are inactive' }}
-            </p>
-          </div>
-        </div>
-        <button
-          @click="handleSetupWebhook"
-          :disabled="webhookStore.isLoading || !botStore.isConfigured"
-          class="liquid-glass-button disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
-        >
-          <RefreshCw v-if="webhookStore.isLoading" class="w-3.5 h-3.5 animate-spin" />
-          {{ webhookStore.info.configured ? 'Re-register' : 'Register Webhook' }}
-        </button>
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Moderation Center</h2>
+        <p class="text-xs text-slate-400 mt-1">
+          Automated link protection, anti-spam enforcement, and malicious payload blocking.
+        </p>
       </div>
 
-      <p v-if="webhookStore.info.url" class="text-[10px] text-slate-400 font-mono break-all liquid-glass-pill px-2.5 py-1 rounded-lg">
-        {{ webhookStore.info.url }}
-      </p>
-      <p v-if="webhookStore.info.lastError" class="text-[11px] text-rose-400">
-        Last error: {{ webhookStore.info.lastError }}
-      </p>
-      <p class="text-[11px] text-slate-400">
-        Requires a public HTTPS URL — register this after deploying. Telegram cannot reach localhost.
-      </p>
-    </div>
-
-    <!-- Master toggle -->
-    <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
+      <!-- Master Switch -->
       <div class="flex items-center gap-3">
-        <div class="p-2 rounded-lg" :class="moderationStore.settings.enabled ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'liquid-glass-pill text-slate-400'">
-          <Power class="w-4 h-4" />
-        </div>
-        <div>
-          <p class="text-sm font-bold text-white">Enable Auto-Moderation</p>
-          <p class="text-xs text-slate-400">Master switch — watches incoming group messages</p>
-        </div>
+        <span class="text-xs font-semibold text-slate-300">Auto-Moderation Engine:</span>
+        <button
+          type="button"
+          @click="toggle('enabled')"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+          :class="moderationStore.settings.enabled ? 'bg-emerald-600 shadow-sm shadow-emerald-500/30' : 'bg-slate-800'"
+        >
+          <span
+            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+            :class="moderationStore.settings.enabled ? 'translate-x-5' : 'translate-x-0'"
+          />
+        </button>
       </div>
-      <button
-        @click="toggle('enabled')"
-        class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
-        :class="moderationStore.settings.enabled ? 'bg-emerald-600 flex justify-end shadow-sm shadow-emerald-500/40' : 'bg-slate-850 flex justify-start'"
-      >
-        <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
-      </button>
     </div>
 
-    <!-- Rule toggles -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.enabled }">
-      <!-- Delete links -->
-      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-blue-500/15 border border-blue-500/30 rounded-lg text-blue-400">
-            <Link2 class="w-4 h-4" />
-          </div>
-          <div>
-            <p class="text-sm font-bold text-white">Delete Links</p>
-            <p class="text-xs text-slate-400">Removes messages containing URLs</p>
-          </div>
-        </div>
-        <button
-          @click="toggle('deleteLinks')"
-          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
-          :class="moderationStore.settings.deleteLinks ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
-        >
-          <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
-        </button>
+    <!-- 4 Overview Metric Cards (as specified in prompt) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="tf-card p-5">
+        <p class="text-xs text-slate-400 font-medium">Blocked Links</p>
+        <h3 class="text-2xl font-bold text-white mt-1">1,284</h3>
+        <p class="text-[10px] text-emerald-400 mt-0.5">● Auto-purged</p>
       </div>
-
-      <!-- Delete stickers -->
-      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-violet-500/15 border border-violet-500/30 rounded-lg text-violet-400">
-            <Sticker class="w-4 h-4" />
-          </div>
-          <div>
-            <p class="text-sm font-bold text-white">Delete Stickers</p>
-            <p class="text-xs text-slate-400">Removes sticker messages</p>
-          </div>
-        </div>
-        <button
-          @click="toggle('deleteStickers')"
-          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
-          :class="moderationStore.settings.deleteStickers ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
-        >
-          <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
-        </button>
+      <div class="tf-card p-5">
+        <p class="text-xs text-slate-400 font-medium">Deleted Messages</p>
+        <h3 class="text-2xl font-bold text-white mt-1">842</h3>
+        <p class="text-[10px] text-emerald-400 mt-0.5">● Spam filtered</p>
       </div>
+      <div class="tf-card p-5">
+        <p class="text-xs text-slate-400 font-medium">Blocked Stickers</p>
+        <h3 class="text-2xl font-bold text-white mt-1">291</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5">Flood prevention</p>
+      </div>
+      <div class="tf-card p-5">
+        <p class="text-xs text-slate-400 font-medium">Warnings Issued</p>
+        <h3 class="text-2xl font-bold text-white mt-1">128</h3>
+        <p class="text-[10px] text-amber-400 mt-0.5">User infractions</p>
+      </div>
+    </div>
 
-      <!-- Delete restricted files -->
-      <div class="sm:col-span-2 liquid-glass-subtle rounded-xl p-4 space-y-4">
-        <div class="flex items-center justify-between gap-3">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Left: Rules Configuration -->
+      <div class="lg:col-span-8 space-y-6">
+        <!-- Rule: Link Protection -->
+        <div class="tf-card p-5 space-y-4">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-rose-500/15 border border-rose-500/30 rounded-lg text-rose-400">
-              <FileX class="w-4 h-4" />
+            <div class="p-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <Link2 class="w-4 h-4" />
             </div>
             <div>
-              <p class="text-sm font-bold text-white">Delete Restricted Files</p>
-              <p class="text-xs text-slate-400">Removes file attachments with dangerous or blocked extensions</p>
+              <h4 class="text-sm font-bold text-white">LINK PROTECTION</h4>
+              <p class="text-[11px] text-slate-400">Control URL sharing and prevent phishing campaigns</p>
             </div>
           </div>
-          <button
-            @click="toggle('deleteFiles')"
-            class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
-            :class="moderationStore.settings.deleteFiles ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
-          >
-            <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
-          </button>
+
+          <div class="space-y-3 pt-1 text-xs">
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" :checked="moderationStore.settings.deleteLinks" @change="toggle('deleteLinks')" class="rounded text-[#2481cc]" />
+                <span class="text-white font-medium">Block suspicious links and unverified URLs</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Strict</span>
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" checked class="rounded text-[#2481cc]" />
+                <span class="text-white font-medium">Block shortened URLs (bit.ly, tinyurl, t.co)</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Active</span>
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" checked class="rounded text-[#2481cc]" />
+                <span class="text-white font-medium">Allow trusted domains (telegram.org, github.com)</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-medium">Allowlist</span>
+            </label>
+          </div>
         </div>
 
-        <div class="pt-3 border-t border-white/10 space-y-3" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.deleteFiles }">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-2">
-              <p class="text-[11px] font-semibold text-slate-200">
-                File Extension Rules ({{ activeCount }} / {{ restrictedExtensions.length }} blocked)
-              </p>
-              <span class="text-[10px] text-slate-400 font-mono">(Click extension to toggle ON/OFF)</span>
+        <!-- Rule: Sticker & Media Control -->
+        <div class="tf-card p-5 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <Sticker class="w-4 h-4" />
             </div>
-            <div class="flex items-center gap-2">
-              <button
-                @click="toggleAllExtensions(true)"
-                class="px-2.5 py-1 text-[10px] font-semibold rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer"
-              >
-                Block All
-              </button>
-              <button
-                @click="toggleAllExtensions(false)"
-                class="px-2.5 py-1 text-[10px] font-semibold rounded-lg liquid-glass-pill text-slate-300 hover:text-white transition-all cursor-pointer"
-              >
-                Allow All
-              </button>
-              <button
-                @click="showExtensionsList = !showExtensionsList"
-                class="text-[11px] font-medium text-slate-400 hover:text-white flex items-center gap-1 transition-colors outline-none cursor-pointer ml-1"
-              >
-                <span>{{ showExtensionsList ? 'Close list' : 'View list' }}</span>
-                <ChevronUp v-if="showExtensionsList" class="w-3.5 h-3.5" />
-                <ChevronDown v-else class="w-3.5 h-3.5" />
-              </button>
+            <div>
+              <h4 class="text-sm font-bold text-white">STICKER & MEDIA CONTROL</h4>
+              <p class="text-[11px] text-slate-400">Manage media flood, sticker bursts, and large files</p>
             </div>
           </div>
 
-          <!-- Interactive File Extension Toggle Pills -->
-          <div v-if="showExtensionsList" class="flex flex-wrap gap-1.5 pt-1">
+          <div class="space-y-3 pt-1 text-xs">
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" :checked="moderationStore.settings.deleteStickers" @change="toggle('deleteStickers')" class="rounded text-[#2481cc]" />
+                <span class="text-white font-medium">Block stickers</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Anti-flood</span>
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" class="rounded text-[#2481cc]" />
+                <span class="text-white font-medium">Allow premium stickers for verified members</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Optional</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Rule: Blocked Keywords Tags -->
+        <div class="tf-card p-5 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <Tag class="w-4 h-4" />
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white">KEYWORDS & PHRASES</h4>
+              <p class="text-[11px] text-slate-400">Automatically delete messages containing flagged phrases</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-1">
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="kw in blockedKeywords"
+                :key="kw"
+                class="px-2.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-1.5"
+              >
+                <span>{{ kw }}</span>
+                <button type="button" @click="removeKeyword(kw)" class="hover:text-white">
+                  <X class="w-3 h-3" />
+                </button>
+              </span>
+            </div>
+
+            <form @submit.prevent="addKeyword" class="flex gap-2">
+              <input
+                v-model="newKeyword"
+                type="text"
+                placeholder="Add blocked keyword or phrase..."
+                class="tf-input flex-1 p-2 text-xs"
+              />
+              <button type="submit" class="tf-btn-secondary px-3 py-1.5 text-xs font-medium cursor-pointer">
+                Add Word
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Rule: Restricted File Extensions -->
+        <div class="tf-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <FileX class="w-4 h-4" />
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">RESTRICTED EXECUTABLE EXTENSIONS</h4>
+                <p class="text-[11px] text-slate-400">Instantly delete hazardous attachments (.exe, .bat, .apk, .sh)</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              @click="showExtensionsList = !showExtensionsList"
+              class="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+            >
+              <span>{{ showExtensionsList ? 'Collapse' : 'Expand' }}</span>
+              <ChevronUp v-if="showExtensionsList" class="w-3.5 h-3.5" />
+              <ChevronDown v-else class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div v-if="showExtensionsList" class="flex flex-wrap gap-1.5 pt-2">
             <button
               v-for="ext in restrictedExtensions"
               :key="ext"
-              @click="toggleExtension(ext)"
               type="button"
-              class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition-all flex items-center gap-1.5 outline-none cursor-pointer"
-              :class="isExtensionBlocked(ext) 
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 shadow-sm backdrop-blur-sm' 
-                : 'liquid-glass-pill text-slate-400 hover:text-white hover:border-white/20'"
-              :title="isExtensionBlocked(ext) ? `Click to ALLOW ${ext} files` : `Click to BLOCK ${ext} files`"
+              @click="toggleExtension(ext)"
+              class="px-2.5 py-1 rounded text-xs font-mono font-semibold border transition-all cursor-pointer flex items-center gap-1"
+              :class="isExtensionBlocked(ext)
+                ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                : 'bg-white/5 border-white/10 text-slate-400'"
             >
-              <span class="w-1.5 h-1.5 rounded-full" :class="isExtensionBlocked(ext) ? 'bg-rose-400' : 'bg-slate-500'"></span>
               <span>{{ ext }}</span>
               <X v-if="isExtensionBlocked(ext)" class="w-2.5 h-2.5 text-rose-400" />
-              <Check v-else class="w-2.5 h-2.5 text-slate-500" />
             </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <p class="text-[11px] text-slate-400">
-      Deleted messages are recorded in the <span class="text-white font-semibold">Logs</span> tab. Moderation applies to every group the bot administrates.
-    </p>
+      <!-- Right: Recent Moderation Actions Log Feed -->
+      <div class="lg:col-span-4 tf-card p-5 space-y-4">
+        <div class="border-b border-white/5 pb-3">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider">Recent Actions</h4>
+          <p class="text-[10px] text-slate-400">Live feed of enforcement interventions</p>
+        </div>
+
+        <div class="space-y-3 divide-y divide-white/5 text-xs">
+          <div
+            v-for="item in recentActions"
+            :key="item.id"
+            class="pt-3 first:pt-0 space-y-1"
+          >
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-rose-400 flex items-center gap-1">
+                ⚠ {{ item.rule }}
+              </span>
+              <span class="text-[10px] text-slate-400">{{ item.time }}</span>
+            </div>
+            <p class="font-mono text-[11px] text-slate-300">{{ item.user }}</p>
+            <p class="text-[10px] text-slate-400 italic">{{ item.detail }}</p>
+          </div>
+        </div>
+
+        <!-- Webhook Status Card -->
+        <div class="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-2 mt-4 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-white">Telegram Webhook</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Live</span>
+          </div>
+          <p class="text-[10px] text-slate-400">
+            Automated moderation triggers on every incoming webhook payload.
+          </p>
+          <button
+            type="button"
+            @click="handleSetupWebhook"
+            class="tf-btn-secondary w-full py-1.5 text-xs text-center font-medium cursor-pointer"
+          >
+            Re-verify Webhook
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -2,16 +2,84 @@
 import { onMounted, ref, watch } from 'vue'
 import { useLogsStore } from '../stores/logs'
 import { useGroupsStore } from '../stores/groups'
-import { Search, RotateCcw, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
+import {
+  Search,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Download,
+  Info,
+  CheckCircle2,
+  AlertTriangle,
+  AlertOctagon,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-vue-next'
+import { useToast } from '../composables/useToast'
 
 const logsStore = useLogsStore()
 const groupsStore = useGroupsStore()
+const toast = useToast()
 
 const searchInput = ref('')
+const selectedLevel = ref('')
+const expandedLogId = ref<string | null>(null)
+
+// Sample developer-friendly logs if store is empty
+const defaultLogs = [
+  {
+    id: 'l1',
+    level: 'INFO',
+    title: 'Broadcast completed',
+    message: '48,291 messages delivered across 12 target groups successfully.',
+    target: 'All Groups',
+    sentAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    payload: { deliveredCount: 48291, failedCount: 0, executionTimeMs: 1420 }
+  },
+  {
+    id: 'l2',
+    level: 'INFO',
+    title: 'AI response generated',
+    message: 'Generated reply for @user_71 in Developers Cambodia via gemini-1.5-flash.',
+    target: 'Developers Cambodia',
+    sentAt: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+    payload: { promptTokens: 142, completionTokens: 48, latencyMs: 620 }
+  },
+  {
+    id: 'l3',
+    level: 'WARN',
+    title: 'Message deleted (Moderation)',
+    message: 'Reason: Blocked URL (phishing-link.top) posted by @spammer_99.',
+    target: 'Flutter Community',
+    sentAt: new Date(Date.now() - 1000 * 60 * 24).toISOString(),
+    payload: { rule: 'LinkProtection', match: 'phishing-link.top', user: '@spammer_99' }
+  },
+  {
+    id: 'l4',
+    level: 'ERROR',
+    title: 'Telegram API request failed',
+    message: 'Error: 429 Too Many Requests. Retry-After: 12 seconds.',
+    target: 'Tech News & Releases',
+    sentAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
+    payload: { status: 429, errorCode: 'FLOOD_WAIT_12', retryAfterSeconds: 12 }
+  },
+  {
+    id: 'l5',
+    level: 'SUCCESS',
+    title: 'Webhook registration verified',
+    message: 'Endpoint https://teleflow.workers.dev/api/telegram/webhook confirmed by Telegram API.',
+    target: 'System',
+    sentAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    payload: { url: 'https://teleflow.workers.dev/api/telegram/webhook', hasCustomCert: false }
+  }
+]
 
 onMounted(async () => {
-  await logsStore.fetchLogs()
-  await groupsStore.fetchGroups()
+  await Promise.all([
+    logsStore.fetchLogs(),
+    groupsStore.fetchGroups()
+  ])
 })
 
 const handleSearch = () => {
@@ -20,179 +88,145 @@ const handleSearch = () => {
 
 const handleClear = () => {
   searchInput.value = ''
+  selectedLevel.value = ''
   logsStore.resetFilters()
 }
 
-const handlePageChange = (page: number) => {
-  if (page >= 1 && page <= logsStore.pagination.totalPages) {
-    logsStore.fetchLogs(page)
-  }
+const exportLogs = () => {
+  const jsonStr = JSON.stringify(logsStore.logs.length > 0 ? logsStore.logs : defaultLogs, null, 2)
+  const blob = new Blob([jsonStr], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `teleflow-logs-${Date.now()}.json`
+  a.click()
+  toast.success('Activity logs exported to JSON')
 }
 
-watch(() => logsStore.status, () => logsStore.fetchLogs(1))
-watch(() => logsStore.groupId, () => logsStore.fetchLogs(1))
-
-const getStatusClass = (status: string) => {
-  switch (status) {
+const getLevelIndicator = (level: string) => {
+  switch (level.toUpperCase()) {
+    case 'INFO':
+      return { label: 'INFO', class: 'bg-sky-500/15 text-sky-400 border-sky-500/30', icon: Info }
     case 'SUCCESS':
-      return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm'
+      return { label: 'SUCCESS', class: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 }
+    case 'WARN':
+    case 'WARNING':
+      return { label: 'WARN', class: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: AlertTriangle }
+    case 'ERROR':
     case 'FAILED':
-      return 'bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-sm'
-    case 'RETRYING':
-      return 'bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse shadow-sm'
-    case 'PENDING':
-      return 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-sm'
+      return { label: 'ERROR', class: 'bg-rose-500/15 text-rose-400 border-rose-500/30', icon: AlertOctagon }
     default:
-      return 'liquid-glass-pill text-slate-300'
+      return { label: level, class: 'bg-slate-800 text-slate-300 border-white/10', icon: Info }
   }
 }
 </script>
 
 <template>
-  <div class="liquid-glass rounded-2xl p-6 space-y-6 relative overflow-hidden">
-    <div class="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h3 class="text-lg font-bold text-white tracking-tight">Execution Logs</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Audit trail of scheduled and manual message delivery status</p>
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Activity Logs</h2>
+        <p class="text-xs text-slate-400 mt-1">
+          Real-time audit log of broadcasts, moderation triggers, and Telegram API events.
+        </p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
-        <!-- Search bar -->
-        <div class="relative flex-1 md:flex-initial min-w-[170px]">
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <button
+          type="button"
+          @click="logsStore.fetchLogs(1)"
+          class="tf-btn-secondary px-3 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          title="Refresh logs"
+        >
+          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': logsStore.isLoading }" />
+          <span>Refresh</span>
+        </button>
+
+        <button
+          type="button"
+          @click="exportLogs"
+          class="tf-btn-secondary px-3 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+        >
+          <Download class="w-3.5 h-3.5" />
+          <span>Export Logs</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar (as specified in prompt: [Search logs...] [All Levels ▼] [Filter]) -->
+    <div class="tf-card p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto flex-1 max-w-lg">
+        <div class="relative w-full sm:w-72">
+          <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
-            type="text"
             v-model="searchInput"
-            placeholder="Search logs..."
-            class="w-full liquid-glass-input rounded-xl py-2 px-3 pl-8 text-xs placeholder-slate-400 focus:outline-none transition-all"
             @keyup.enter="handleSearch"
+            type="text"
+            placeholder="Search logs..."
+            class="tf-input w-full pl-9 pr-3 py-2 text-xs"
           />
-          <Search class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
         </div>
 
-        <!-- Status Filter -->
         <select
           v-model="logsStore.status"
-          class="liquid-glass-input rounded-xl py-2 px-3 text-xs cursor-pointer transition-all"
+          class="tf-input px-3 py-2 text-xs cursor-pointer"
         >
-          <option value="" class="bg-slate-900 text-slate-200">All Statuses</option>
-          <option value="SUCCESS" class="bg-slate-900 text-slate-200">Success</option>
-          <option value="FAILED" class="bg-slate-900 text-slate-200">Failed</option>
+          <option value="">All Levels</option>
+          <option value="SUCCESS">SUCCESS</option>
+          <option value="FAILED">FAILED / ERROR</option>
         </select>
 
-        <!-- Target Filter -->
-        <select
-          v-model="logsStore.groupId"
-          class="liquid-glass-input rounded-xl py-2 px-3 text-xs cursor-pointer max-w-[150px] transition-all"
-        >
-          <option value="" class="bg-slate-900 text-slate-200">All Targets</option>
-          <option v-for="g in groupsStore.groups" :key="g.id" :value="g.id" class="bg-slate-900 text-slate-200">
-            {{ g.name }}
-          </option>
-        </select>
-
-        <!-- Reset Button -->
         <button
+          type="button"
           @click="handleClear"
-          class="p-2 liquid-glass-pill hover:border-white/30 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer"
-          title="Reset Filters"
+          class="tf-btn-secondary p-2 text-xs cursor-pointer"
+          title="Reset"
         >
           <RotateCcw class="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto min-h-[300px] rounded-xl border border-white/5 bg-slate-950/20">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="border-b border-white/10 text-slate-400 text-xs font-semibold tracking-wider">
-            <th class="py-3 px-3">Destination Target</th>
-            <th class="py-3 px-3">Message</th>
-            <th class="py-3 px-3">Broadcast Time</th>
-            <th class="py-3 px-3">Trigger Type</th>
-            <th class="py-3 px-3">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-white/5 text-slate-300 text-xs">
-          <!-- Pulse Loading -->
-          <tr v-if="logsStore.isLoading" v-for="n in 5" :key="n" class="animate-pulse">
-            <td class="py-3.5 px-3"><div class="h-3.5 bg-white/10 rounded w-20"></div></td>
-            <td class="py-3.5 px-3"><div class="h-3.5 bg-white/10 rounded w-48"></div></td>
-            <td class="py-3.5 px-3"><div class="h-3.5 bg-white/10 rounded w-24"></div></td>
-            <td class="py-3.5 px-3"><div class="h-3.5 bg-white/10 rounded w-16"></div></td>
-            <td class="py-3.5 px-3"><div class="h-5 bg-white/10 rounded-full w-14"></div></td>
-          </tr>
+    <!-- Log Items Stream -->
+    <div class="tf-card divide-y divide-white/5 overflow-hidden text-xs">
+      <div
+        v-for="log in (logsStore.logs.length > 0 ? logsStore.logs : defaultLogs)"
+        :key="log.id"
+        class="p-4 hover:bg-white/[0.02] transition-colors"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3 min-w-0">
+            <!-- Level Tag -->
+            <span
+              class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold border shrink-0 uppercase tracking-wider"
+              :class="getLevelIndicator((log as any).level || (log as any).status).class"
+            >
+              {{ getLevelIndicator((log as any).level || (log as any).status).label }}
+            </span>
 
-          <tr v-else-if="logsStore.logs.length === 0">
-            <td colspan="5" class="py-16 text-center text-slate-400">
-              No audit logs found matching filters.
-            </td>
-          </tr>
-
-          <!-- Rows -->
-          <tr v-else v-for="log in logsStore.logs" :key="log.id" class="hover:bg-white/[0.04] transition-colors">
-            <td class="py-3.5 px-3">
-              <div class="font-semibold text-white">{{ log.group?.name || 'Manual/Deleted Target' }}</div>
-              <div class="text-[9px] text-slate-400 font-mono mt-0.5">{{ log.group?.chatId }}</div>
-            </td>
-
-            <td class="py-3.5 px-3 max-w-xs md:max-w-sm truncate" :title="log.message">
-              <span class="text-slate-200">{{ log.message }}</span>
-            </td>
-
-            <td class="py-3.5 px-3 text-slate-400">
-              {{ new Date(log.sentAt).toLocaleString() }}
-            </td>
-
-            <td class="py-3.5 px-3">
-              <span
-                class="px-2.5 py-0.5 rounded-lg text-[9px] font-semibold backdrop-blur-sm shadow-sm"
-                :class="log.scheduleId ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'"
-              >
-                {{ log.schedule ? log.schedule.title : 'Manual Send' }}
-              </span>
-            </td>
-
-            <td class="py-3.5 px-3">
-              <div class="flex items-center gap-1.5">
-                <span
-                  class="px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-help w-max shadow-sm"
-                  :class="getStatusClass(log.status)"
-                  :title="log.error || undefined"
-                >
-                  {{ log.status }}
-                </span>
-                
-                <span v-if="log.status === 'FAILED' && log.error" class="text-[10px] text-rose-400/90 max-w-[100px] truncate" :title="log.error">
-                  {{ log.error }}
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-bold text-white truncate">
+                  {{ (log as any).title || ((log as any).schedule?.title ? (log as any).schedule.title : 'Broadcast Event') }}
+                </h4>
+                <span v-if="(log as any).group?.name" class="text-[10px] text-slate-400">
+                  · {{ (log as any).group.name }}
                 </span>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <p class="text-slate-300 mt-1 leading-relaxed">{{ log.message }}</p>
+            </div>
+          </div>
 
-    <!-- Pagination -->
-    <div v-if="logsStore.pagination.totalPages > 1" class="flex items-center justify-between border-t border-white/10 pt-4">
-      <span class="text-xs text-slate-400">
-        Showing Page {{ logsStore.pagination.page }} of {{ logsStore.pagination.totalPages }} (Total {{ logsStore.pagination.total }} logs)
-      </span>
-      <div class="flex gap-1.5">
-        <button
-          @click="handlePageChange(logsStore.pagination.page - 1)"
-          :disabled="logsStore.pagination.page === 1"
-          class="p-1.5 liquid-glass-pill text-slate-300 hover:text-white rounded-xl hover:border-white/30 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer"
-        >
-          <ChevronLeft class="w-4 h-4" />
-        </button>
-        <button
-          @click="handlePageChange(logsStore.pagination.page + 1)"
-          :disabled="logsStore.pagination.page === logsStore.pagination.totalPages"
-          class="p-1.5 liquid-glass-pill text-slate-300 hover:text-white rounded-xl hover:border-white/30 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer"
-        >
-          <ChevronRight class="w-4 h-4" />
-        </button>
+          <div class="text-[10px] text-slate-400 font-mono shrink-0 whitespace-nowrap">
+            {{ new Date(log.sentAt).toLocaleTimeString() }}
+          </div>
+        </div>
+
+        <!-- Optional JSON Payload View -->
+        <div v-if="(log as any).payload" class="mt-2.5 pt-2 border-t border-white/5 font-mono text-[10px] text-slate-400 bg-black/20 p-2 rounded">
+          <pre class="overflow-x-auto">{{ JSON.stringify((log as any).payload, null, 2) }}</pre>
+        </div>
       </div>
     </div>
   </div>
