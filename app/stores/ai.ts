@@ -6,6 +6,8 @@ export interface AiSettings {
   model: string
   systemPrompt: string
   maxTokens: number
+  apiKey?: string
+  hasCustomKey?: boolean
   keyConfigured?: boolean
 }
 

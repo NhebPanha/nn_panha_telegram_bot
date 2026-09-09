@@ -81,6 +81,7 @@ export interface AiSettings {
   model: string
   systemPrompt: string
   maxTokens: number
+  apiKey?: string
 }
 
 // A user the bot has observed in a chat. The Bot API cannot list a group's

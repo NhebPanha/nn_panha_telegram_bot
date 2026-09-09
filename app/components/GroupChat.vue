@@ -191,8 +191,8 @@ watch(() => chatStore.messages.length, scrollToBottom)
 
 onMounted(async () => {
   if (groupsStore.groups.length === 0) await groupsStore.fetchGroups()
-  // Auto-refresh the open conversation every 8s to pull in new messages
-  pollTimer = setInterval(refresh, 8000)
+  // Auto-refresh the open conversation every 2s for live real-time sync
+  pollTimer = setInterval(refresh, 2000)
 })
 
 onBeforeUnmount(() => {
@@ -268,8 +268,14 @@ onBeforeUnmount(() => {
               {{ initials(activeGroup.name) }}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-bold text-white truncate">{{ activeGroup.name }}</p>
-              <p class="text-[10px] text-slate-500">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-bold text-white truncate">{{ activeGroup.name }}</p>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 shadow-sm">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Live
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-400">
                 {{ chatStore.totalCount !== null ? chatStore.totalCount + ' members' : chatStore.members.length + ' known' }}
               </p>
             </div>

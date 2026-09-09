@@ -31,7 +31,10 @@ export async function generateAiReply(opts: {
   }
   contents.push({ role: 'user', parts: [{ text: `${opts.userName}: ${opts.userText}` }] })
 
-  const model = settings.model || 'gemini-flash-latest'
+  let model = settings.model || 'gemini-1.5-flash'
+  if (model === 'gemini-flash-latest') model = 'gemini-1.5-flash'
+  if (model === 'gemini-flash-lite-latest') model = 'gemini-1.5-flash-8b'
+  if (model === 'gemini-pro-latest') model = 'gemini-1.5-pro'
 
   const body: Record<string, any> = {
     contents,

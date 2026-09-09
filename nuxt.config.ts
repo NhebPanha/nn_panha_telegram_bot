@@ -40,7 +40,7 @@ export default defineNuxtConfig({
   // Server-side configs (runtimeConfig)
   // On Cloudflare set these as NUXT_* vars (e.g. NUXT_ENCRYPTION_KEY)
   runtimeConfig: {
-    encryptionKey: process.env.ENCRYPTION_KEY || 'default-secret-key-32-chars-long!',
+    encryptionKey: process.env.ENCRYPTION_KEY || 'teleflow-ultra-secure-secret-encryption-key-32b',
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
     telegramGroupChatId: process.env.TELEGRAM_GROUP_CHAT_ID || '',
     // Shared secret used to authenticate Telegram webhook calls

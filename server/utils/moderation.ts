@@ -378,25 +378,32 @@ async function maybeAiReply(
   const text = (msg.text || '').trim()
   if (!text) return
 
-  if (!mentionsBot(msg, botUserId, botUsername) && !isReplyToBot(msg, botUserId, botUsername)) return
-
   const settings = await db.getAiSettings()
-  if (!settings.enabled || !settings.replyOnMention) return
+  if (!settings.enabled) return
+
+  const isPrivate = msg.chat.type === 'private'
+
+  // In groups: if replyOnMention is enabled, verify the bot was mentioned or replied to
+  if (!isPrivate) {
+    if (settings.replyOnMention && !mentionsBot(msg, botUserId, botUsername) && !isReplyToBot(msg, botUserId, botUsername)) {
+      return
+    }
+  }
 
   const chatId = String(msg.chat.id)
   const chatTitle = msg.chat.title || chatId
 
-  const apiKey = (useRuntimeConfig().geminiApiKey || '').trim()
+  const apiKey = (settings.apiKey || useRuntimeConfig().geminiApiKey || process.env.GEMINI_API_KEY || '').trim()
   if (!apiKey) {
-    console.warn('[AI] Mention received but GEMINI_API_KEY is not configured.')
+    console.warn('[AI] Message received but GEMINI_API_KEY is not configured.')
     const grp = await db.getGroupByChatId(chatId)
     await db.createLog(
       grp ? grp.id : null,
       chatTitle,
       null,
-      'AI reply skipped: GEMINI_API_KEY is not set on the server',
+      'AI reply skipped: Gemini API key is not configured',
       'FAILED',
-      'Missing GEMINI_API_KEY (dev: .env then restart; Cloudflare: wrangler secret put NUXT_GEMINI_API_KEY)'
+      'Add your Gemini API key in AI Settings or set GEMINI_API_KEY in .env'
     )
     return
   }

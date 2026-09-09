@@ -2,24 +2,27 @@
 import { ref, onMounted } from 'vue'
 import { useAiStore } from '../stores/ai'
 import { useToast } from '../composables/useToast'
-import { Sparkles, AlertCircle, RefreshCw, Bot } from 'lucide-vue-next'
+import { Sparkles, AlertCircle, RefreshCw, Bot, Key, Eye, EyeOff, CheckCircle2 } from 'lucide-vue-next'
 
 const aiStore = useAiStore()
 const toast = useToast()
 
+const showApiKey = ref(false)
 const form = ref({
   enabled: false,
   replyOnMention: true,
-  model: 'gemini-flash-latest',
+  model: 'gemini-1.5-flash',
   systemPrompt: '',
-  maxTokens: 600
+  maxTokens: 600,
+  apiKey: ''
 })
 const saving = ref(false)
 
 const models = [
-  { value: 'gemini-flash-latest', label: 'Gemini Flash', hint: 'Fast & capable · recommended' },
-  { value: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite', hint: 'Fastest & cheapest' },
-  { value: 'gemini-pro-latest', label: 'Gemini Pro', hint: 'Most capable · slower' }
+  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', hint: 'Fast, capable & recommended' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', hint: 'Next-gen real-time intelligence' },
+  { value: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite', hint: 'Ultra lightweight & lowest latency' },
+  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', hint: 'Deep reasoning & maximum context' }
 ]
 
 const syncForm = () => {
@@ -27,9 +30,10 @@ const syncForm = () => {
   form.value = {
     enabled: s.enabled,
     replyOnMention: s.replyOnMention,
-    model: s.model || 'claude-opus-5',
+    model: s.model || 'gemini-1.5-flash',
     systemPrompt: s.systemPrompt || '',
-    maxTokens: s.maxTokens || 600
+    maxTokens: s.maxTokens || 600,
+    apiKey: s.apiKey || ''
   }
 }
 
@@ -44,7 +48,7 @@ const handleSave = async () => {
     const res = await aiStore.updateSettings({ ...form.value })
     if (res.success) {
       syncForm()
-      toast.success('AI settings saved')
+      toast.success('AI settings saved successfully')
     }
   } catch (error: any) {
     toast.error(error.statusMessage || 'Failed to save AI settings')
@@ -63,26 +67,69 @@ const handleSave = async () => {
       </div>
       <div>
         <h3 class="text-lg font-bold text-white">AI Auto-Reply</h3>
-        <p class="text-xs text-slate-400">Let the bot answer with Google Gemini when a user mentions it or replies to it</p>
+        <p class="text-xs text-slate-400">Let the bot answer with Google Gemini in private chats and when mentioned in groups</p>
       </div>
     </div>
 
-    <!-- API key warning -->
+    <!-- API key warning if not configured -->
     <div
       v-if="!aiStore.settings.keyConfigured"
       class="p-4 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 flex items-start gap-3 backdrop-blur-md shadow-sm"
     >
       <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
       <div>
-        <h5 class="text-sm font-bold text-amber-300">Gemini API key not set</h5>
+        <h5 class="text-sm font-bold text-amber-300">Gemini API Key Required</h5>
         <p class="text-xs text-slate-300 mt-1">
-          Set <span class="font-mono text-white">GEMINI_API_KEY</span> in your <span class="font-mono">.env</span>
-          (or <span class="font-mono">NUXT_GEMINI_API_KEY</span> as a Wrangler secret on Cloudflare). AI replies stay off until it's configured.
+          Paste your <span class="font-mono text-white">Google Gemini API Key</span> below or set <span class="font-mono text-white">GEMINI_API_KEY</span> in your environment.
         </p>
       </div>
     </div>
 
     <form @submit.prevent="handleSave" class="space-y-5">
+      <!-- Gemini API Key Input -->
+      <div class="liquid-glass-subtle rounded-xl p-4 border border-white/10 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
+            <Key class="w-3.5 h-3.5 text-purple-400" />
+            Google Gemini API Key
+          </label>
+          <span
+            v-if="aiStore.settings.keyConfigured"
+            class="flex items-center gap-1 text-[11px] text-emerald-400 font-medium"
+          >
+            <CheckCircle2 class="w-3.5 h-3.5" />
+            Active & Ready
+          </span>
+          <span
+            v-else
+            class="flex items-center gap-1 text-[11px] text-amber-400 font-medium"
+          >
+            <AlertCircle class="w-3.5 h-3.5" />
+            Key Required
+          </span>
+        </div>
+
+        <div class="relative">
+          <input
+            :type="showApiKey ? 'text' : 'password'"
+            v-model="form.apiKey"
+            placeholder="AIzaSy... (paste your Gemini API Key)"
+            class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 pr-10 text-sm font-mono"
+          />
+          <button
+            type="button"
+            @click="showApiKey = !showApiKey"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Toggle Key Visibility"
+          >
+            <EyeOff v-if="showApiKey" class="w-4 h-4" />
+            <Eye v-else class="w-4 h-4" />
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-400">
+          Get a free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">Google AI Studio</a>.
+        </p>
+      </div>
       <!-- Enable toggle -->
       <div class="flex items-center justify-between liquid-glass-subtle rounded-xl px-4 py-3 border border-white/10">
         <div class="flex items-center gap-3">
