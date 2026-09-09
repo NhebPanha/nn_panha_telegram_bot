@@ -4,36 +4,169 @@
 
 :root {
   --tf-page-bg: rgb(2 6 23); /* Slate-950 base (dark) */
+  --liquid-border: rgba(255, 255, 255, 0.12);
+  --liquid-border-hover: rgba(255, 255, 255, 0.22);
+  --liquid-shine: rgba(255, 255, 255, 0.16);
+  --liquid-surface: rgba(15, 23, 42, 0.55);
+  --liquid-surface-elevated: rgba(15, 23, 42, 0.78);
+  --liquid-surface-subtle: rgba(2, 6, 23, 0.45);
 }
 
 body {
   background-color: var(--tf-page-bg);
   transition: background-color 0.25s ease;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   LIQUID GLASS DESIGN SYSTEM UTILITIES
+   Translucent acrylic materials, specular rims, and fluid depth.
+   ============================================================ */
+
+.liquid-glass {
+  background: var(--liquid-surface);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid var(--liquid-border);
+  box-shadow:
+    inset 0 1px 1px 0 var(--liquid-shine),
+    0 12px 36px -8px rgba(0, 0, 0, 0.45);
+}
+
+.liquid-glass-elevated {
+  background: var(--liquid-surface-elevated);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.25),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
+.liquid-glass-subtle {
+  background: var(--liquid-surface-subtle);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.liquid-glass-interactive {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.liquid-glass-interactive:hover {
+  border-color: var(--liquid-border-hover);
+  box-shadow:
+    inset 0 1px 1.5px 0 var(--liquid-shine),
+    0 16px 40px -8px rgba(124, 58, 237, 0.2);
+  transform: translateY(-1px);
+}
+
+.liquid-glass-input {
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1.5px 3px 0 rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.liquid-glass-input:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.75);
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.22),
+    inset 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.liquid-glass-button {
+  background-image: linear-gradient(135deg, rgba(147, 51, 234, 0.95), rgba(79, 70, 229, 0.95));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
+    0 8px 22px -4px rgba(124, 58, 237, 0.45);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.liquid-glass-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+    0 12px 28px -4px rgba(124, 58, 237, 0.6);
+  transform: translateY(-1px);
+}
+.liquid-glass-button:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.liquid-glass-pill {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Ambient fluid glow animations */
+@keyframes liquid-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(25px, -35px) scale(1.08);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+.liquid-orb-1 {
+  animation: liquid-float 18s ease-in-out infinite;
+}
+
+.liquid-orb-2 {
+  animation: liquid-float 22s ease-in-out infinite reverse;
 }
 
 /* ============================================================
    LIGHT THEME
-   Scoped remap of the dark neutral utilities to light values.
-   Accent colors (purple / emerald / rose / amber / blue …) are
-   intentionally left untouched so branding stays consistent.
+   Crystalline frosted ice aesthetic with high readability
    ============================================================ */
 html.theme-light {
-  --tf-page-bg: #eef2f7;
+  --tf-page-bg: #f3f6fa;
+  --liquid-border: rgba(255, 255, 255, 0.85);
+  --liquid-border-hover: rgba(168, 85, 247, 0.4);
+  --liquid-shine: rgba(255, 255, 255, 0.95);
+  --liquid-surface: rgba(255, 255, 255, 0.72);
+  --liquid-surface-elevated: rgba(255, 255, 255, 0.88);
+  --liquid-surface-subtle: rgba(241, 245, 249, 0.75);
+}
+
+html.theme-light body {
+  color: #0f172a;
 }
 
 /* Page + surface backgrounds */
-html.theme-light .bg-slate-950 { background-color: #eef2f7; }
-html.theme-light .bg-slate-950\/80 { background-color: rgba(255, 255, 255, 0.9); }
-html.theme-light .bg-slate-950\/60 { background-color: rgba(255, 255, 255, 0.75); }
-html.theme-light .bg-slate-950\/40 { background-color: rgba(255, 255, 255, 0.6); }
+html.theme-light .bg-slate-950 { background-color: #f3f6fa; }
+html.theme-light .bg-slate-950\/80 { background-color: rgba(255, 255, 255, 0.92); }
+html.theme-light .bg-slate-950\/60 { background-color: rgba(255, 255, 255, 0.82); }
+html.theme-light .bg-slate-950\/50 { background-color: rgba(255, 255, 255, 0.75); }
+html.theme-light .bg-slate-950\/40 { background-color: rgba(255, 255, 255, 0.65); }
 html.theme-light .bg-slate-900 { background-color: #ffffff; }
 html.theme-light .bg-slate-900\/90 { background-color: rgba(255, 255, 255, 0.96); }
 html.theme-light .bg-slate-900\/80 { background-color: rgba(255, 255, 255, 0.92); }
 html.theme-light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.85); }
-html.theme-light .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.72); }
+html.theme-light .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.75); }
+html.theme-light .bg-slate-850 { background-color: #e2e8f0; }
 html.theme-light .bg-slate-800 { background-color: #e2e8f0; }
-html.theme-light .bg-slate-800\/40 { background-color: rgba(148, 163, 184, 0.22); }
-html.theme-light .bg-slate-800\/10 { background-color: rgba(148, 163, 184, 0.12); }
+html.theme-light .bg-slate-800\/60 { background-color: rgba(226, 232, 240, 0.6); }
+html.theme-light .bg-slate-800\/40 { background-color: rgba(226, 232, 240, 0.4); }
+html.theme-light .bg-slate-800\/30 { background-color: rgba(226, 232, 240, 0.3); }
+html.theme-light .bg-slate-800\/10 { background-color: rgba(226, 232, 240, 0.15); }
 html.theme-light .bg-slate-700 { background-color: #cbd5e1; }
 
 /* Text colors */
@@ -41,17 +174,20 @@ html.theme-light .text-white { color: #0f172a; }
 html.theme-light .text-slate-100 { color: #1e293b; }
 html.theme-light .text-slate-200 { color: #1e293b; }
 html.theme-light .text-slate-300 { color: #334155; }
+html.theme-light .text-slate-350 { color: #475569; }
 html.theme-light .text-slate-400 { color: #64748b; }
 html.theme-light .text-slate-500 { color: #94a3b8; }
-html.theme-light .text-slate-600 { color: #b4bfce; }
-/* Decorative oversized background icons */
-html.theme-light .text-slate-800\/20 { color: rgba(100, 116, 139, 0.14); }
+html.theme-light .text-slate-600 { color: #cbd5e1; }
+html.theme-light .text-slate-800\/20 { color: rgba(148, 163, 184, 0.2); }
 
 /* Borders */
 html.theme-light .border-slate-950,
-html.theme-light .border-slate-900 { border-color: #e6ebf2; }
+html.theme-light .border-slate-900 { border-color: #e2e8f0; }
+html.theme-light .border-slate-850,
 html.theme-light .border-slate-800,
-html.theme-light .border-slate-800\/80 { border-color: #dbe2ea; }
+html.theme-light .border-slate-800\/80,
+html.theme-light .border-slate-800\/90 { border-color: #e2e8f0; }
+html.theme-light .border-slate-700,
 html.theme-light .border-slate-700\/60,
 html.theme-light .border-slate-700\/50 { border-color: #cbd5e1; }
 
@@ -59,13 +195,48 @@ html.theme-light .border-slate-700\/50 { border-color: #cbd5e1; }
 html.theme-light .placeholder-slate-600::placeholder,
 html.theme-light .placeholder-slate-500::placeholder { color: #94a3b8; }
 
-/* Soften the ambient gradient blobs on light bg */
-html.theme-light .blur-\[120px\] { opacity: 0.4; }
+/* Liquid Glass light theme specifics */
+html.theme-light .liquid-glass {
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95),
+    0 12px 32px -8px rgba(148, 163, 184, 0.28);
+}
+html.theme-light .liquid-glass-elevated {
+  box-shadow:
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 1),
+    0 20px 44px -10px rgba(100, 116, 139, 0.25);
+}
+html.theme-light .liquid-glass-subtle {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+}
+html.theme-light .liquid-glass-input {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(203, 213, 225, 0.9);
+  box-shadow: inset 0 1px 2px 0 rgba(148, 163, 184, 0.15);
+  color: #0f172a;
+}
+html.theme-light .liquid-glass-input:focus {
+  border-color: rgba(147, 51, 234, 0.6);
+  box-shadow:
+    0 0 0 3px rgba(147, 51, 234, 0.18),
+    inset 0 1px 2px 0 rgba(148, 163, 184, 0.1);
+}
+html.theme-light .liquid-glass-pill {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(226, 232, 240, 0.9);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1);
+}
+
+/* Ambient gradient blooms on light background */
+html.theme-light .blur-\[120px\],
+html.theme-light .blur-\[140px\] {
+  opacity: 0.45;
+}
 
 /* Keep code chips readable in light mode */
 html.theme-light code { color: #7c3aed; }
 
-/* Hide horizontal scrollbar (e.g. the tab nav) while keeping it scrollable */
+/* Hide horizontal scrollbar while preserving scrollability */
 .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none;    /* Firefox */
@@ -75,45 +246,61 @@ html.theme-light code { color: #7c3aed; }
 }
 
 /* ============================================================
-   CHAT UI — theme-aware surfaces & bubbles
+   CHAT UI — Liquid Glass surfaces & bubbles
    ============================================================ */
 
-/* Conversation canvas: subtle depth in both themes */
 .chat-canvas {
   background:
-    radial-gradient(1200px 400px at 50% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
-    rgba(2, 6, 23, 0.25);
+    radial-gradient(1200px 500px at 50% -10%, rgba(124, 58, 237, 0.08), transparent 70%),
+    rgba(2, 6, 23, 0.35);
 }
 html.theme-light .chat-canvas {
   background:
-    radial-gradient(1200px 400px at 50% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
-    #f1f5f9;
+    radial-gradient(1200px 500px at 50% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
+    rgba(241, 245, 249, 0.65);
 }
 
-/* Incoming bubble */
+/* Incoming bubble: Frosted Liquid Acrylic */
 .chat-bubble-in {
-  background-color: rgba(30, 41, 59, 0.9); /* slate-800 */
-  color: #e5e7eb;
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.15),
+    0 4px 12px -2px rgba(0, 0, 0, 0.25);
 }
 html.theme-light .chat-bubble-in {
-  background-color: #ffffff;
+  background: rgba(255, 255, 255, 0.9);
   color: #1e293b;
-  border: 1px solid #e6ebf2;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1),
+    0 4px 12px -2px rgba(15, 23, 42, 0.06);
 }
 
-/* Outgoing bubble (bot / dashboard) — consistent brand gradient both themes */
+/* Outgoing bubble: Fluid Liquid Gradient with specular top shine */
 .chat-bubble-out {
-  background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background-image: linear-gradient(135deg, rgba(147, 51, 234, 0.95), rgba(99, 102, 241, 0.95));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   color: #ffffff;
-  border: 1px solid rgba(139, 92, 246, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
+    0 6px 18px -3px rgba(124, 58, 237, 0.4);
 }
 
-/* Custom slim scrollbar for chat panes (kept, unlike the hidden nav bar) */
-.chat-canvas::-webkit-scrollbar { width: 8px; }
+/* Custom slim scrollbar for chat panes */
+.chat-canvas::-webkit-scrollbar { width: 6px; }
 .chat-canvas::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
+  backdrop-filter: blur(4px);
+}
+.chat-canvas::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
 }
 .chat-canvas::-webkit-scrollbar-track { background: transparent; }
+

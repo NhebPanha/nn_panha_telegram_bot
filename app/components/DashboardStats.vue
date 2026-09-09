@@ -54,12 +54,12 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
 <template>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
     <!-- Stat Card: Bots Status -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 group">
-      <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
+    <div class="relative overflow-hidden liquid-glass liquid-glass-interactive rounded-2xl p-6 group">
+      <div class="absolute -right-3 -bottom-3 text-white/[0.03] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
         <Cpu class="w-24 h-24" />
       </div>
-      <div class="flex items-center gap-4">
-        <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+      <div class="flex items-center gap-4 relative z-10">
+        <div class="p-3 bg-indigo-500/15 border border-indigo-500/30 rounded-xl text-indigo-400 backdrop-blur-md shadow-sm shadow-indigo-500/20">
           <Cpu class="w-6 h-6" />
         </div>
         <div>
@@ -75,12 +75,12 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
     </div>
 
     <!-- Stat Card: Targets Coverage -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 group">
-      <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
+    <div class="relative overflow-hidden liquid-glass liquid-glass-interactive rounded-2xl p-6 group">
+      <div class="absolute -right-3 -bottom-3 text-white/[0.03] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
         <Users class="w-24 h-24" />
       </div>
-      <div class="flex items-center gap-4">
-        <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+      <div class="flex items-center gap-4 relative z-10">
+        <div class="p-3 bg-blue-500/15 border border-blue-500/30 rounded-xl text-blue-400 backdrop-blur-md shadow-sm shadow-blue-500/20">
           <Users class="w-6 h-6" />
         </div>
         <div>
@@ -95,12 +95,12 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
     </div>
 
     <!-- Stat Card: Delivery Queue -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 group">
-      <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
+    <div class="relative overflow-hidden liquid-glass liquid-glass-interactive rounded-2xl p-6 group">
+      <div class="absolute -right-3 -bottom-3 text-white/[0.03] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
         <CalendarRange class="w-24 h-24" />
       </div>
-      <div class="flex items-center gap-4">
-        <div class="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl text-violet-400">
+      <div class="flex items-center gap-4 relative z-10">
+        <div class="p-3 bg-violet-500/15 border border-violet-500/30 rounded-xl text-violet-400 backdrop-blur-md shadow-sm shadow-violet-500/20">
           <CalendarRange class="w-6 h-6" />
         </div>
         <div>
@@ -113,12 +113,12 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
     </div>
 
     <!-- Stat Card: Broadcast Success -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 group">
-      <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
+    <div class="relative overflow-hidden liquid-glass liquid-glass-interactive rounded-2xl p-6 group">
+      <div class="absolute -right-3 -bottom-3 text-white/[0.03] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
         <CheckCircle2 class="w-24 h-24" />
       </div>
-      <div class="flex items-center gap-4">
-        <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400">
+      <div class="flex items-center gap-4 relative z-10">
+        <div class="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 backdrop-blur-md shadow-sm shadow-emerald-500/20">
           <CheckCircle2 class="w-6 h-6" />
         </div>
         <div>
@@ -131,12 +131,12 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
     </div>
 
     <!-- Stat Card: Next Scheduled Message -->
-    <div class="relative overflow-hidden bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl hover:border-slate-700/60 transition-all duration-300 xl:col-span-1 lg:col-span-1 sm:col-span-2 group">
-      <div class="absolute -right-4 -bottom-4 text-slate-800/20 group-hover:scale-110 transition-transform duration-300">
+    <div class="relative overflow-hidden liquid-glass liquid-glass-interactive rounded-2xl p-6 xl:col-span-1 lg:col-span-1 sm:col-span-2 group">
+      <div class="absolute -right-3 -bottom-3 text-white/[0.03] group-hover:scale-110 transition-transform duration-300 pointer-events-none">
         <Clock class="w-24 h-24" />
       </div>
-      <div class="flex items-start gap-4">
-        <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+      <div class="flex items-start gap-4 relative z-10">
+        <div class="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-400 backdrop-blur-md shadow-sm shadow-amber-500/20">
           <Clock class="w-6 h-6" />
         </div>
         <div class="flex-1 min-w-0">
@@ -147,7 +147,7 @@ watch(() => dashboardStore.stats.nextSchedule, calculateCountdown)
           <p class="text-[10px] text-slate-400 font-mono mt-0.5">
             {{ dashboardStore.stats.nextSchedule ? `@ ${dashboardStore.stats.nextSchedule.time}` : '' }}
           </p>
-          <div class="text-[11px] font-semibold text-white mt-2 flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg w-max">
+          <div class="text-[11px] font-semibold text-white mt-2 flex items-center gap-1.5 liquid-glass-pill px-2.5 py-1 rounded-lg w-max border-amber-500/30">
             <span class="relative flex h-1.5 w-1.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>

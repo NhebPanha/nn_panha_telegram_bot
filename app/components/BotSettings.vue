@@ -111,9 +111,9 @@ const handleSendTest = async () => {
     <div :class="sidebar ? 'w-full' : 'lg:col-span-8'" class="space-y-6">
 
       <!-- Bot Registration Card -->
-      <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+      <div class="liquid-glass rounded-2xl p-6 relative overflow-hidden">
         <div class="flex items-center gap-3 mb-6">
-          <div class="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl text-purple-400">
+          <div class="p-2.5 bg-purple-500/15 border border-purple-500/30 rounded-xl text-purple-400 shadow-sm shadow-purple-500/20 backdrop-blur-md">
             <Key class="w-5 h-5" />
           </div>
           <div>
@@ -125,23 +125,23 @@ const handleSendTest = async () => {
         <form @submit.prevent="handleSaveToken" class="space-y-4">
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Telegram Bot Token</label>
-            <div class="relative rounded-xl overflow-hidden shadow-inner">
+            <div class="relative rounded-xl overflow-hidden">
               <input
                 :type="showToken ? 'text' : 'password'"
                 v-model="tokenInput"
                 placeholder="Paste your Telegram Bot Token (e.g. 123456789:ABCdef...)"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-3 px-4 text-sm font-mono focus:outline-none transition-all pr-12"
+                class="w-full liquid-glass-input rounded-xl py-3 px-4 text-sm font-mono pr-12"
               />
               <button
                 type="button"
                 @click="showToken = !showToken"
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <EyeOff v-if="showToken" class="w-5 h-5" />
                 <Eye v-else class="w-5 h-5" />
               </button>
             </div>
-            <p class="text-[11px] text-slate-500 mt-2">
+            <p class="text-[11px] text-slate-400 mt-2">
               Note: The token is encrypted using AES-256-CBC and stored locally inside <code class="text-xs text-purple-300">data/bot.json</code>.
             </p>
           </div>
@@ -150,7 +150,7 @@ const handleSendTest = async () => {
             <button
               type="submit"
               :disabled="botStore.isLoading"
-              class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium py-3 px-4 rounded-xl shadow-lg shadow-purple-500/15 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+              class="w-full liquid-glass-button text-white text-sm font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
               <RefreshCw v-if="botStore.isLoading" class="w-4 h-4 animate-spin" />
               {{ botStore.isConfigured ? 'Replace & Re-verify Bot' : 'Save & Verify Bot' }}
@@ -160,9 +160,9 @@ const handleSendTest = async () => {
       </div>
 
       <!-- Configured Bot Card -->
-      <div v-if="!sidebar" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+      <div v-if="!sidebar" class="liquid-glass rounded-2xl p-6 relative overflow-hidden">
         <div class="flex items-center gap-3 mb-6">
-          <div class="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+          <div class="p-2.5 bg-indigo-500/15 border border-indigo-500/30 rounded-xl text-indigo-400 shadow-sm shadow-indigo-500/20 backdrop-blur-md">
             <ShieldCheck class="w-5 h-5" />
           </div>
           <div>
@@ -171,7 +171,7 @@ const handleSendTest = async () => {
           </div>
         </div>
 
-        <div v-if="!botStore.bot" class="text-center py-8 text-slate-500 border border-dashed border-slate-800 rounded-xl">
+        <div v-if="!botStore.bot" class="text-center py-8 text-slate-400 border border-dashed border-white/10 rounded-xl">
           No bot configured yet. Add one using the form above.
         </div>
 
@@ -184,8 +184,8 @@ const handleSendTest = async () => {
               </a>
             </div>
             <span
-              class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5"
-              :class="botStore.bot.status === 'ONLINE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'"
+              class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 liquid-glass-pill"
+              :class="botStore.bot.status === 'ONLINE' ? 'text-emerald-400 border-emerald-500/30' : 'text-rose-400 border-rose-500/30'"
             >
               <span class="h-1.5 w-1.5 rounded-full" :class="botStore.bot.status === 'ONLINE' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"></span>
               {{ botStore.bot.status }}
@@ -193,23 +193,23 @@ const handleSendTest = async () => {
           </div>
 
           <div class="grid grid-cols-2 gap-3 text-xs">
-            <div class="flex items-center gap-1.5 text-slate-400">
-              <span class="w-1.5 h-1.5 rounded-full" :class="botStore.bot.permissions?.can_join_groups ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+            <div class="flex items-center gap-2 text-slate-300">
+              <span class="w-1.5 h-1.5 rounded-full" :class="botStore.bot.permissions?.can_join_groups ? 'bg-emerald-400' : 'bg-rose-400'"></span>
               Join Groups
             </div>
-            <div class="flex items-center gap-1.5 text-slate-400">
-              <span class="w-1.5 h-1.5 rounded-full" :class="botStore.bot.permissions?.can_read_all_group_messages ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+            <div class="flex items-center gap-2 text-slate-300">
+              <span class="w-1.5 h-1.5 rounded-full" :class="botStore.bot.permissions?.can_read_all_group_messages ? 'bg-emerald-400' : 'bg-rose-400'"></span>
               Read Messages
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-850">
-            <div class="flex items-center gap-2 text-xs text-slate-400">
+          <div class="flex flex-wrap items-center gap-3 pt-3 border-t border-white/10">
+            <div class="flex items-center gap-2 text-xs text-slate-300">
               <span>Active</span>
               <button
                 @click="handleToggleBot"
-                class="w-10 h-6 rounded-full p-0.5 transition-all outline-none"
-                :class="botStore.bot.active ? 'bg-purple-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+                class="w-10 h-6 rounded-full p-0.5 transition-all outline-none cursor-pointer"
+                :class="botStore.bot.active ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-800 flex justify-start'"
               >
                 <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
               </button>
@@ -217,7 +217,7 @@ const handleSendTest = async () => {
             <div class="flex-1"></div>
             <button
               @click="handleVerifyBot"
-              class="px-3 py-1.5 bg-slate-800 border border-slate-700/60 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors flex items-center gap-1.5 text-xs font-medium"
+              class="px-3 py-1.5 liquid-glass-pill rounded-lg text-slate-200 hover:text-white transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer"
               title="Verify Bot Connection"
             >
               <ShieldCheck class="w-4 h-4 text-emerald-400" />
@@ -225,7 +225,7 @@ const handleSendTest = async () => {
             </button>
             <button
               @click="handleDeleteBot"
-              class="px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5 text-xs font-medium"
+              class="px-3 py-1.5 liquid-glass-pill border-rose-500/30 text-rose-400 hover:text-rose-300 rounded-lg transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer"
               title="Remove Bot"
             >
               <Trash2 class="w-4 h-4" />
@@ -241,7 +241,7 @@ const handleSendTest = async () => {
     <div :class="sidebar ? 'w-full' : 'lg:col-span-4'" class="space-y-6">
 
       <!-- Quick Info -->
-      <div v-if="sidebar && botStore.bot" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+      <div v-if="sidebar && botStore.bot" class="liquid-glass rounded-2xl p-6 relative overflow-hidden">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Bot Overview</h3>
         <div class="flex items-center justify-between">
           <div class="truncate pr-2">
@@ -250,15 +250,15 @@ const handleSendTest = async () => {
           </div>
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full" :class="botStore.isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"></span>
-            <button @click="handleVerifyBot" class="text-xs text-purple-400 hover:text-purple-300">Verify</button>
+            <button @click="handleVerifyBot" class="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer">Verify</button>
           </div>
         </div>
       </div>
 
       <!-- Test Dispatcher Card -->
-      <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+      <div class="liquid-glass rounded-2xl p-6 relative overflow-hidden">
         <div class="flex items-center gap-3 mb-4">
-          <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+          <div class="p-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-400 shadow-sm shadow-amber-500/20 backdrop-blur-md">
             <Send class="w-5 h-5" />
           </div>
           <div>
@@ -270,10 +270,10 @@ const handleSendTest = async () => {
         <div class="space-y-3">
           <!-- Target Selector -->
           <div>
-            <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Target Destination</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Target Destination</label>
             <select
               v-model="testChatId"
-              class="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none transition-all"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm transition-all"
             >
               <option value="">Select target destination...</option>
               <option v-for="g in groupsStore.groups" :key="g.id" :value="g.chatId">
@@ -284,18 +284,18 @@ const handleSendTest = async () => {
 
           <!-- Message Text -->
           <div>
-            <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Message Content</label>
+            <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Message Content</label>
             <div class="relative">
               <textarea
                 v-model="testMessageContent"
                 placeholder="Write test message here (HTML mode)..."
                 rows="3"
-                class="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 text-white rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none pr-10"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm resize-none pr-10"
               ></textarea>
               <button
                 @click="handleSendTest"
                 :disabled="isTesting || !botStore.isConfigured || !testChatId || !testMessageContent"
-                class="absolute right-2.5 bottom-3.5 text-purple-400 hover:text-purple-300 disabled:opacity-40 transition-colors p-1"
+                class="absolute right-2.5 bottom-3.5 text-purple-400 hover:text-purple-300 disabled:opacity-40 transition-colors p-1 cursor-pointer"
               >
                 <RefreshCw v-if="isTesting" class="w-4 h-4 animate-spin" />
                 <Send v-else class="w-4 h-4" />

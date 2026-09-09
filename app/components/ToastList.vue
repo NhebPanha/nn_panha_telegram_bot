@@ -19,12 +19,12 @@ const { toasts, removeToast } = useToast()
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl border backdrop-blur-md shadow-lg"
+        class="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl liquid-glass-elevated border transition-all duration-200"
         :class="{
-          'bg-slate-900/90 border-emerald-500/30 text-emerald-400': toast.type === 'success',
-          'bg-slate-900/90 border-rose-500/30 text-rose-400': toast.type === 'error',
-          'bg-slate-900/90 border-amber-500/30 text-amber-400': toast.type === 'warning',
-          'bg-slate-900/90 border-blue-500/30 text-blue-400': toast.type === 'info'
+          'border-emerald-500/40 text-emerald-300 shadow-[0_12px_32px_-6px_rgba(16,185,129,0.25)]': toast.type === 'success',
+          'border-rose-500/40 text-rose-300 shadow-[0_12px_32px_-6px_rgba(244,63,94,0.25)]': toast.type === 'error',
+          'border-amber-500/40 text-amber-300 shadow-[0_12px_32px_-6px_rgba(245,158,11,0.25)]': toast.type === 'warning',
+          'border-sky-500/40 text-sky-300 shadow-[0_12px_32px_-6px_rgba(14,165,233,0.25)]': toast.type === 'info'
         }"
       >
         <div class="flex-shrink-0 mt-0.5">
@@ -34,13 +34,14 @@ const { toasts, removeToast } = useToast()
           <Info v-else class="w-5 h-5" />
         </div>
 
-        <div class="flex-1 text-sm font-medium text-slate-200">
+        <div class="flex-1 text-sm font-medium text-white/95 leading-snug">
           {{ toast.message }}
         </div>
 
         <button
           @click="removeToast(toast.id)"
-          class="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors p-0.5 rounded-lg hover:bg-white/5"
+          class="flex-shrink-0 text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+          title="Dismiss notification"
         >
           <X class="w-4 h-4" />
         </button>

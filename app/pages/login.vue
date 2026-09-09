@@ -36,20 +36,22 @@ const handleLogin = async () => {
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans selection:bg-purple-600/30 selection:text-purple-200 relative overflow-hidden">
-    <!-- Ambient Gradient Blobs -->
-    <div class="fixed top-0 left-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
-    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <!-- Fluid Liquid Ambient Blooms -->
+    <div class="fixed -top-20 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-purple-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-1"></div>
+    <div class="fixed -bottom-20 right-1/4 w-[520px] h-[520px] bg-gradient-to-br from-cyan-600/15 via-blue-600/10 to-transparent rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-2"></div>
 
-    <div class="relative z-10 w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-md overflow-hidden grid grid-cols-1 md:grid-cols-2">
+    <div class="relative z-10 w-full max-w-4xl liquid-glass-elevated rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
       <!-- Left: Brand Panel -->
-      <div class="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-900 border-r border-slate-800 relative">
+      <div class="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-purple-950/30 via-slate-900/40 to-slate-950/60 border-r border-white/10 relative">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-md shadow-purple-500/10">
-            <Send class="w-4 h-4 text-white transform rotate-[15deg] -translate-x-0.5 -translate-y-0.5" />
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 p-0.5 shadow-md shadow-purple-500/25 ring-1 ring-white/20">
+            <div class="w-full h-full rounded-[10px] bg-slate-950/40 backdrop-blur-sm flex items-center justify-center">
+              <Send class="w-4 h-4 text-white transform rotate-[15deg] -translate-x-0.5 -translate-y-0.5" />
+            </div>
           </div>
           <div>
             <h1 class="text-sm font-bold tracking-wider text-white">TELEFLOW PRO</h1>
-            <p class="text-[9px] text-slate-500 uppercase font-semibold">Bot Orchestration</p>
+            <p class="text-[9px] text-slate-400 uppercase font-semibold">Bot Orchestration</p>
           </div>
         </div>
 
@@ -57,22 +59,24 @@ const handleLogin = async () => {
           <h2 class="text-2xl font-bold text-white leading-tight">
             Automated Telegram broadcasts and group moderation.
           </h2>
-          <p class="text-slate-400 text-sm leading-relaxed">
+          <p class="text-slate-300 text-sm leading-relaxed">
             Manage multiple bots, run automated daily messaging campaigns, monitor system health, and secure moderation logs from a unified dashboard.
           </p>
         </div>
 
-        <div class="text-[10px] text-slate-600 font-mono">
+        <div class="text-[10px] text-slate-400 font-mono liquid-glass-pill px-3 py-1.5 rounded-lg w-max">
           &copy; 2026 TeleFlow System. Secure encryption active.
         </div>
       </div>
 
       <!-- Right: Form Panel -->
-      <div class="p-8 md:p-10 flex flex-col justify-center bg-slate-900/40">
+      <div class="p-8 md:p-10 flex flex-col justify-center bg-slate-900/30 backdrop-blur-md">
         <!-- Mobile Logo Header -->
         <div class="flex items-center gap-3 md:hidden mb-8">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center">
-            <Send class="w-3.5 h-3.5 text-white transform rotate-[15deg] -translate-x-0.5 -translate-y-0.5" />
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 p-0.5">
+            <div class="w-full h-full rounded-md bg-slate-950/40 flex items-center justify-center">
+              <Send class="w-3.5 h-3.5 text-white transform rotate-[15deg] -translate-x-0.5 -translate-y-0.5" />
+            </div>
           </div>
           <div>
             <h1 class="text-xs font-bold tracking-wider text-white">TELEFLOW PRO</h1>
@@ -88,12 +92,12 @@ const handleLogin = async () => {
           <div>
             <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Username</label>
             <div class="relative">
-              <User class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <User class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 v-model="username"
                 type="text"
                 placeholder="admin"
-                class="w-full bg-slate-950 border border-slate-800 focus:border-purple-600 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 transition-colors focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500"
                 required
               />
             </div>
@@ -102,12 +106,12 @@ const handleLogin = async () => {
           <div>
             <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
             <div class="relative">
-              <Lock class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Lock class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 v-model="password"
                 type="password"
                 placeholder="••••••••"
-                class="w-full bg-slate-950 border border-slate-800 focus:border-purple-600 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 transition-colors focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500"
                 required
               />
             </div>
@@ -116,7 +120,7 @@ const handleLogin = async () => {
           <button
             type="submit"
             :disabled="isLoading"
-            class="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg py-2.5 font-semibold text-sm transition-all shadow-md shadow-purple-500/10 flex items-center justify-center gap-2 mt-2"
+            class="w-full liquid-glass-button disabled:opacity-50 text-white rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 mt-2 cursor-pointer"
           >
             <Loader2 v-if="isLoading" class="w-4 h-4 animate-spin" />
             <template v-else>

@@ -208,10 +208,10 @@ const getMsgTypeIcon = (type: string) => {
 </script>
 
 <template>
-  <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+  <div class="liquid-glass rounded-2xl p-6 relative overflow-hidden">
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
-        <div class="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl text-purple-400">
+        <div class="p-2.5 bg-purple-500/15 border border-purple-500/30 rounded-xl text-purple-400 shadow-sm shadow-purple-500/20 backdrop-blur-md">
           <CalendarRange class="w-5 h-5" />
         </div>
         <div>
@@ -222,7 +222,7 @@ const getMsgTypeIcon = (type: string) => {
       <button
         @click="openAddModal"
         :disabled="!botStore.isConfigured"
-        class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:pointer-events-none text-white text-sm font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-purple-500/15 transition-all flex items-center gap-2 hover:-translate-y-0.5"
+        class="liquid-glass-button disabled:opacity-40 disabled:pointer-events-none text-white text-sm font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
       >
         <Plus class="w-4 h-4" />
         Create Schedule
@@ -230,12 +230,12 @@ const getMsgTypeIcon = (type: string) => {
     </div>
 
     <!-- Alert if no bot -->
-    <div v-if="!botStore.isConfigured" class="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 flex items-start gap-3">
-      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
+    <div v-if="!botStore.isConfigured" class="mb-6 p-4 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 flex items-start gap-3 backdrop-blur-md shadow-sm">
+      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
       <div>
-        <h5 class="text-sm font-bold">No Bot Configured</h5>
-        <p class="text-xs text-slate-400 mt-1">
-          You must configure and verify a Telegram Bot inside the <span class="font-bold text-slate-350">Bot Settings</span> tab before creating schedules.
+        <h5 class="text-sm font-bold text-amber-300">No Bot Configured</h5>
+        <p class="text-xs text-slate-300 mt-1">
+          You must configure and verify a Telegram Bot inside the <span class="font-bold text-white">Bot Settings</span> tab before creating schedules.
         </p>
       </div>
     </div>
@@ -248,7 +248,7 @@ const getMsgTypeIcon = (type: string) => {
 
     <!-- Empty State -->
     <div v-else-if="schedulesStore.schedules.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="p-4 bg-slate-950/60 rounded-full border border-slate-800 text-slate-500 mb-4">
+      <div class="p-4 bg-white/5 rounded-full border border-white/10 text-slate-400 mb-4 backdrop-blur-md">
         <Clock class="w-8 h-8" />
       </div>
       <h4 class="text-base font-bold text-slate-200">No Schedules Setup</h4>
@@ -262,20 +262,20 @@ const getMsgTypeIcon = (type: string) => {
       <div
         v-for="schedule in schedulesStore.schedules"
         :key="schedule.id"
-        class="flex flex-col justify-between bg-slate-950/40 border border-slate-800 rounded-xl p-5 hover:border-slate-700/60 transition-all duration-300 group"
+        class="flex flex-col justify-between liquid-glass liquid-glass-interactive rounded-2xl p-5 group"
       >
         <div>
           <!-- Top details -->
           <div class="flex items-start justify-between gap-4 mb-3">
             <div class="min-w-0 flex-1">
-              <h4 class="text-sm font-bold text-white group-hover:text-purple-400 transition-colors truncate">
+              <h4 class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors truncate">
                 {{ schedule.title }}
               </h4>
             </div>
             <button
               @click="handleToggleStatus(schedule)"
               class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-              :class="schedule.isActive ? 'bg-purple-600' : 'bg-slate-800'"
+              :class="schedule.isActive ? 'bg-purple-600 shadow-sm shadow-purple-500/40' : 'bg-slate-850'"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
@@ -286,25 +286,25 @@ const getMsgTypeIcon = (type: string) => {
 
           <!-- Schedule Trigger Time & timezone -->
           <div class="flex flex-wrap gap-1.5 mb-3">
-            <span class="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-mono">
+            <span class="inline-flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-lg font-mono">
               <Clock class="w-3 h-3" />
               {{ formatScheduleTime(schedule) }}
             </span>
-            <span class="inline-flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-mono">
+            <span class="inline-flex items-center gap-1 text-[10px] text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-lg font-mono">
               <Globe class="w-3 h-3" />
               {{ schedule.timezone }}
             </span>
-            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg">
               <Users class="w-3 h-3" />
               {{ targetLabel(schedule) }}
             </span>
           </div>
 
           <!-- Message Body Preview -->
-          <div class="relative bg-slate-900/60 border border-slate-850/50 rounded-xl p-3 mb-4 text-xs leading-relaxed text-slate-350 italic min-h-[4.5rem] break-words">
+          <div class="relative liquid-glass-subtle rounded-xl p-3 mb-4 text-xs leading-relaxed text-slate-300 italic min-h-[4.5rem] break-words">
             <!-- Format Icon -->
-            <div class="absolute right-2 top-2 text-slate-600 flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider">
-              <span class="px-1 py-0.5 bg-slate-800 border border-slate-700/60 rounded">
+            <div class="absolute right-2 top-2 text-slate-400 flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider">
+              <span class="px-1.5 py-0.5 liquid-glass-pill rounded text-slate-300">
                 {{ schedule.parseMode }}
               </span>
               <component :is="getMsgTypeIcon(schedule.messageType)" class="w-3.5 h-3.5" />
@@ -318,19 +318,19 @@ const getMsgTypeIcon = (type: string) => {
         </div>
 
         <!-- Footer actions & stats -->
-        <div class="flex items-center justify-between border-t border-slate-900 pt-3 text-[10px] text-slate-500">
+        <div class="flex items-center justify-between border-t border-white/10 pt-3 text-[10px] text-slate-400">
           <span>Executed: {{ schedule.lastExecutedAt ? new Date(schedule.lastExecutedAt).toLocaleDateString() : 'Never' }}</span>
           <div class="flex items-center gap-1">
             <button
               @click="openEditModal(schedule)"
-              class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all"
+              class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-all cursor-pointer"
               title="Edit Schedule"
             >
               <Edit2 class="w-3.5 h-3.5" />
             </button>
             <button
               @click="handleDeleteSchedule(schedule.id, schedule.title)"
-              class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-all"
+              class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/15 transition-all cursor-pointer"
               title="Delete Schedule"
             >
               <Trash2 class="w-3.5 h-3.5" />
@@ -342,9 +342,9 @@ const getMsgTypeIcon = (type: string) => {
 
     <!-- Modal: Create / Edit Schedule -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div @click="closeModal" class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+      <div @click="closeModal" class="absolute inset-0 bg-slate-950/65 backdrop-blur-md" />
 
-      <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto">
+      <div class="relative w-full max-w-md liquid-glass-elevated rounded-2xl p-6 z-10 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-bold text-white mb-2">
           {{ isEditing ? 'Edit Schedule' : 'Create Broadcast Schedule' }}
         </h3>
@@ -360,7 +360,7 @@ const getMsgTypeIcon = (type: string) => {
               type="text"
               v-model="formTitle"
               placeholder="E.g., Engineering Weekly Report"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm"
             />
           </div>
 
@@ -369,7 +369,7 @@ const getMsgTypeIcon = (type: string) => {
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Timezone</label>
             <select
               v-model="formTimezone"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-xs focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-xs"
             >
               <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
                 {{ tz.label }}
@@ -383,7 +383,7 @@ const getMsgTypeIcon = (type: string) => {
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Schedule Type</label>
               <select
                 v-model="formType"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
               >
                 <option value="one_time">One Time</option>
                 <option value="daily">Daily</option>
@@ -403,13 +403,13 @@ const getMsgTypeIcon = (type: string) => {
                 type="text"
                 v-model="formTime"
                 placeholder="*/15 * * * *"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm font-mono focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm font-mono"
               />
               <input
                 v-else
                 type="time"
                 v-model="formTime"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3.5 text-sm focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm"
               />
             </div>
           </div>
@@ -419,7 +419,7 @@ const getMsgTypeIcon = (type: string) => {
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Day of Week</label>
             <select
               v-model="formDayOfWeek"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
             >
               <option v-for="wd in weekdays" :key="wd.value" :value="wd.value">
                 {{ wd.label }}
@@ -435,7 +435,7 @@ const getMsgTypeIcon = (type: string) => {
               v-model="formDayOfMonth"
               min="1"
               max="31"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3.5 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm"
             />
           </div>
 
@@ -445,7 +445,7 @@ const getMsgTypeIcon = (type: string) => {
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Formatting Mode</label>
               <select
                 v-model="formParseMode"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
               >
                 <option value="HTML">HTML Mode</option>
                 <option value="MarkdownV2">Markdown V2 Mode</option>
@@ -457,7 +457,7 @@ const getMsgTypeIcon = (type: string) => {
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Message Type</label>
               <select
                 v-model="formMessageType"
-                class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+                class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
               >
                 <option value="text">Plain Text</option>
                 <option value="photo">Photo Attachment</option>
@@ -474,32 +474,32 @@ const getMsgTypeIcon = (type: string) => {
               type="url"
               v-model="formMediaUrl"
               placeholder="https://example.com/image.png"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none font-mono"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm font-mono"
             />
           </div>
 
           <!-- Target Groups -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Send To</label>
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 max-h-44 overflow-y-auto space-y-1">
+            <div class="liquid-glass-subtle rounded-xl p-2.5 max-h-44 overflow-y-auto space-y-1">
               <!-- All groups option -->
               <button
                 type="button"
                 @click="selectAllGroups"
-                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors"
-                :class="formTargetGroupIds.length === 0 ? 'bg-purple-600/15 border border-purple-500/30' : 'hover:bg-slate-800/50 border border-transparent'"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all cursor-pointer"
+                :class="formTargetGroupIds.length === 0 ? 'bg-purple-600/20 border border-purple-500/35' : 'hover:bg-white/5 border border-transparent'"
               >
                 <span
                   class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                  :class="formTargetGroupIds.length === 0 ? 'border-purple-500' : 'border-slate-600'"
+                  :class="formTargetGroupIds.length === 0 ? 'border-purple-500' : 'border-slate-500'"
                 >
-                  <span v-if="formTargetGroupIds.length === 0" class="w-2 h-2 rounded-full bg-purple-500" />
+                  <span v-if="formTargetGroupIds.length === 0" class="w-2 h-2 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
                 </span>
                 <Users class="w-3.5 h-3.5 text-slate-400" />
                 <span class="text-sm text-white font-medium">All active groups</span>
               </button>
 
-              <div v-if="groupsStore.groups.length > 0" class="h-px bg-slate-800 my-1"></div>
+              <div v-if="groupsStore.groups.length > 0" class="h-px bg-white/10 my-1"></div>
 
               <!-- Per-group checkboxes -->
               <button
@@ -507,12 +507,12 @@ const getMsgTypeIcon = (type: string) => {
                 :key="g.id"
                 type="button"
                 @click="toggleTargetGroup(Number(g.id))"
-                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors"
-                :class="formTargetGroupIds.includes(Number(g.id)) ? 'bg-slate-800/60' : 'hover:bg-slate-800/40'"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all cursor-pointer"
+                :class="formTargetGroupIds.includes(Number(g.id)) ? 'bg-white/10' : 'hover:bg-white/5'"
               >
                 <span
                   class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center"
-                  :class="formTargetGroupIds.includes(Number(g.id)) ? 'border-purple-500 bg-purple-500' : 'border-slate-600'"
+                  :class="formTargetGroupIds.includes(Number(g.id)) ? 'border-purple-500 bg-purple-500' : 'border-slate-500'"
                 >
                   <svg v-if="formTargetGroupIds.includes(Number(g.id))" class="w-2.5 h-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 011.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" />
@@ -520,16 +520,16 @@ const getMsgTypeIcon = (type: string) => {
                 </span>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm text-white truncate">{{ g.name }}</p>
-                  <p class="text-[10px] text-slate-500 font-mono truncate">{{ g.chatId }}</p>
+                  <p class="text-[10px] text-slate-400 font-mono truncate">{{ g.chatId }}</p>
                 </div>
-                <span v-if="!g.isActive" class="text-[9px] text-slate-500 uppercase font-bold">off</span>
+                <span v-if="!g.isActive" class="text-[9px] text-slate-400 uppercase font-bold">off</span>
               </button>
 
-              <p v-if="groupsStore.groups.length === 0" class="text-xs text-slate-500 text-center py-3">
+              <p v-if="groupsStore.groups.length === 0" class="text-xs text-slate-400 text-center py-3">
                 No groups yet. Add targets in the Groups tab.
               </p>
             </div>
-            <p class="text-[10px] text-slate-500 mt-1.5">
+            <p class="text-[10px] text-slate-400 mt-1.5">
               {{ formTargetGroupIds.length === 0 ? 'This schedule will broadcast to every active group.' : `Sends only to ${formTargetGroupIds.length} selected group(s).` }}
             </p>
           </div>
@@ -541,7 +541,7 @@ const getMsgTypeIcon = (type: string) => {
               v-model="formMessage"
               rows="4"
               placeholder="Enter message body here..."
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none resize-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm resize-none"
             ></textarea>
           </div>
 
@@ -550,13 +550,13 @@ const getMsgTypeIcon = (type: string) => {
             <button
               type="button"
               @click="closeModal"
-              class="flex-1 bg-slate-800 hover:bg-slate-750 text-slate-300 text-sm font-medium py-2.5 rounded-xl border border-slate-700/60 transition-all"
+              class="flex-1 liquid-glass-pill hover:text-white text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium py-2.5 rounded-xl shadow-lg shadow-purple-500/15 transition-all"
+              class="flex-1 liquid-glass-button text-white text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               {{ isEditing ? 'Save Changes' : 'Create Schedule' }}
             </button>

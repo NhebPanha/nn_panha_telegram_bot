@@ -20,7 +20,7 @@ const tabs = [
   <div class="space-y-8">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           System Panel
         </h2>
         <p class="text-xs text-slate-400 mt-1">
@@ -28,20 +28,21 @@ const tabs = [
         </p>
       </div>
 
-      <nav class="flex items-center bg-slate-900/80 backdrop-blur-xl border border-slate-800/90 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar shadow-lg shadow-black/40 ring-1 ring-white/5 gap-1">
+      <!-- Floating Liquid Glass Tab Navigation -->
+      <nav class="flex items-center liquid-glass p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar gap-1">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="activeTab = tab.id"
-          class="group flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all duration-200 whitespace-nowrap select-none shrink-0"
+          class="group flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all duration-200 whitespace-nowrap select-none shrink-0 cursor-pointer"
           :class="activeTab === tab.id 
-            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/25 ring-1 ring-white/20 font-bold scale-[1.02]' 
-            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 active:scale-95'"
+            ? 'liquid-glass-button text-white font-bold ring-1 ring-white/25' 
+            : 'text-slate-400 hover:text-white hover:bg-white/5 active:scale-95'"
         >
           <component 
             :is="tab.icon" 
             class="w-4 h-4 transition-all duration-200" 
-            :class="activeTab === tab.id ? 'text-white scale-110' : 'text-slate-400 group-hover:text-slate-200'"
+            :class="activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'"
           />
           <span>{{ tab.name }}</span>
         </button>

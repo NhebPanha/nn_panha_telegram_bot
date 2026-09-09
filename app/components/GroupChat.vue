@@ -201,42 +201,42 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl overflow-hidden backdrop-blur-md shadow-xl">
+  <div class="liquid-glass rounded-2xl overflow-hidden relative">
     <div class="grid grid-cols-1 lg:grid-cols-12 h-[640px]">
       <!-- Sidebar: chat list -->
       <aside
-        class="lg:col-span-3 border-r border-slate-800/80 flex flex-col min-h-0"
+        class="lg:col-span-3 border-r border-white/10 flex flex-col min-h-0"
         :class="activeGroupId ? 'hidden lg:flex' : 'flex'"
       >
-        <div class="p-4 border-b border-slate-800/80">
+        <div class="p-4 border-b border-white/10">
           <h3 class="text-sm font-bold text-white mb-3">Chats</h3>
           <div class="relative">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search chats..."
-              class="w-full bg-slate-950/60 border border-slate-850 focus:border-purple-500 text-white placeholder-slate-500 rounded-xl py-2 px-9 text-xs focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2 px-9 text-xs"
             />
           </div>
         </div>
         <div class="flex-1 overflow-y-auto">
-          <div v-if="chatList.length === 0" class="p-6 text-center text-xs text-slate-500">
+          <div v-if="chatList.length === 0" class="p-6 text-center text-xs text-slate-400">
             No chats yet. Add groups in the Groups tab, or the bot will auto-discover them when added to a chat.
           </div>
           <button
             v-for="g in chatList"
             :key="g.id"
             @click="loadChat(g.id)"
-            class="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-slate-850/60 transition-colors"
-            :class="activeGroupId === g.id ? 'bg-purple-600/10' : 'hover:bg-slate-800/30'"
+            class="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-white/5 transition-all cursor-pointer"
+            :class="activeGroupId === g.id ? 'bg-purple-600/15 border-l-2 border-purple-500' : 'hover:bg-white/5'"
           >
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" :class="avatarColor(Number(g.chatId))">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm" :class="avatarColor(Number(g.chatId))">
               {{ initials(g.name) }}
             </div>
             <div class="min-w-0 flex-1">
               <p class="text-sm font-semibold text-white truncate">{{ g.name }}</p>
-              <p class="text-[10px] text-slate-500 font-mono truncate">{{ g.chatId }} · {{ g.type }}</p>
+              <p class="text-[10px] text-slate-400 font-mono truncate">{{ g.chatId }} · {{ g.type }}</p>
             </div>
           </button>
         </div>
@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
       >
         <!-- Empty state -->
         <div v-if="!activeGroup" class="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div class="p-4 bg-slate-950/60 rounded-full border border-slate-800 text-slate-500 mb-4">
+          <div class="p-4 bg-white/5 rounded-full border border-white/10 text-slate-400 mb-4 backdrop-blur-md">
             <MessageSquare class="w-8 h-8" />
           </div>
           <h4 class="text-base font-bold text-slate-200">Select a chat</h4>
@@ -260,8 +260,8 @@ onBeforeUnmount(() => {
 
         <template v-else>
           <!-- Conversation header -->
-          <header class="flex items-center gap-3 px-4 py-3 border-b border-slate-800/80">
-            <button @click="activeGroupId = null" class="lg:hidden p-1.5 text-slate-400 hover:text-white">
+          <header class="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+            <button @click="activeGroupId = null" class="lg:hidden p-1.5 text-slate-400 hover:text-white cursor-pointer">
               <ArrowLeft class="w-4 h-4" />
             </button>
             <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" :class="avatarColor(Number(activeGroup.chatId))">
@@ -273,21 +273,21 @@ onBeforeUnmount(() => {
                 {{ chatStore.totalCount !== null ? chatStore.totalCount + ' members' : chatStore.members.length + ' known' }}
               </p>
             </div>
-            <button @click="refresh" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800" title="Refresh">
+            <button @click="refresh" class="p-2 text-slate-400 hover:text-white rounded-xl liquid-glass-pill cursor-pointer" title="Refresh">
               <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': chatStore.isLoadingMessages }" />
             </button>
             <button
               @click="handleClearChat"
               :disabled="chatStore.messages.length === 0"
-              class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:bg-transparent"
+              class="p-2 text-slate-400 hover:text-rose-400 rounded-xl liquid-glass-pill hover:border-rose-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               title="Clear chat history"
             >
               <Trash2 class="w-4 h-4" />
             </button>
             <button
               @click="showMembers = !showMembers"
-              class="p-2 rounded-lg hover:bg-slate-800 lg:hidden"
-              :class="showMembers ? 'text-purple-400' : 'text-slate-400'"
+              class="p-2 rounded-xl liquid-glass-pill lg:hidden cursor-pointer"
+              :class="showMembers ? 'text-purple-400 border-purple-500/30' : 'text-slate-400'"
               title="Members"
             >
               <Users class="w-4 h-4" />
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
             <div v-if="chatStore.isLoadingMessages && chatStore.messages.length === 0" class="flex justify-center py-8">
               <RefreshCw class="w-6 h-6 text-purple-400 animate-spin" />
             </div>
-            <div v-else-if="chatStore.messages.length === 0" class="text-center text-xs text-slate-500 py-8">
+            <div v-else-if="chatStore.messages.length === 0" class="text-center text-xs text-slate-400 py-8">
               No messages recorded yet. Incoming group messages appear here once members chat.
             </div>
 
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
               class="flex gap-2.5 group/msg items-start"
               :class="msg.direction === 'out' ? 'flex-row-reverse' : ''"
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" :class="avatarColor(msg.fromId)">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-sm" :class="avatarColor(msg.fromId)">
                 {{ initials(msg.fromName) }}
               </div>
               <div
@@ -317,13 +317,13 @@ onBeforeUnmount(() => {
                 :class="msg.mediaType === 'sticker'
                   ? 'bg-transparent'
                   : (msg.direction === 'out'
-                      ? 'chat-bubble-out rounded-2xl rounded-tr-md px-3.5 py-2 shadow-sm'
-                      : 'chat-bubble-in rounded-2xl rounded-tl-md px-3.5 py-2 shadow-sm')"
+                      ? 'chat-bubble-out rounded-2xl rounded-tr-md px-3.5 py-2'
+                      : 'chat-bubble-in rounded-2xl rounded-tl-md px-3.5 py-2')"
               >
                 <p
                   v-if="msg.direction === 'in'"
                   class="text-[11px] font-bold mb-0.5"
-                  :class="msg.isBot ? 'text-cyan-500' : 'text-purple-400'"
+                  :class="msg.isBot ? 'text-cyan-400' : 'text-purple-400'"
                 >
                   {{ msg.fromName }}<span v-if="msg.isBot"> 🤖</span>
                 </p>
@@ -342,7 +342,7 @@ onBeforeUnmount(() => {
                 <div v-if="msg.mediaType" :class="msg.text ? 'mb-1.5' : ''">
                   <!-- Photo -->
                   <a v-if="msg.mediaType === 'photo'" :href="mediaSrc(msg.mediaFileId)" target="_blank" rel="noopener">
-                    <img :src="mediaSrc(msg.mediaFileId)" loading="lazy" class="rounded-xl max-h-72 w-auto object-cover cursor-zoom-in" />
+                    <img :src="mediaSrc(msg.mediaFileId)" loading="lazy" class="rounded-xl max-h-72 w-auto object-cover cursor-zoom-in ring-1 ring-white/10" />
                   </a>
                   <!-- Static sticker (webp) -->
                   <img
@@ -356,7 +356,7 @@ onBeforeUnmount(() => {
                     :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
                     class="w-32 h-32 object-contain drop-shadow"
                   ></video>
-                  <!-- Animated sticker (.tgs / Lottie — not renderable in-browser) -->
+                  <!-- Animated sticker (.tgs / Lottie) -->
                   <div v-else-if="msg.mediaType === 'sticker'" class="w-24 h-24 flex items-center justify-center text-6xl">
                     {{ msg.mediaEmoji || '🎯' }}
                   </div>
@@ -364,13 +364,13 @@ onBeforeUnmount(() => {
                   <video
                     v-else-if="msg.mediaType === 'video'"
                     :src="mediaSrc(msg.mediaFileId)" controls preload="metadata"
-                    class="rounded-xl max-h-72 max-w-full"
+                    class="rounded-xl max-h-72 max-w-full ring-1 ring-white/10"
                   ></video>
                   <!-- Animation / GIF -->
                   <video
                     v-else-if="msg.mediaType === 'animation'"
                     :src="mediaSrc(msg.mediaFileId)" autoplay loop muted playsinline
-                    class="rounded-xl max-h-72 max-w-full"
+                    class="rounded-xl max-h-72 max-w-full ring-1 ring-white/10"
                   ></video>
                   <!-- Voice / Audio -->
                   <audio
@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
                 <p v-if="msg.text" class="whitespace-pre-wrap break-words">{{ msg.text }}</p>
                 <p
                   class="text-[9px] mt-1 opacity-60 text-right"
-                  :class="msg.mediaType === 'sticker' ? 'text-slate-500' : ''"
+                  :class="msg.mediaType === 'sticker' ? 'text-slate-400' : ''"
                 >
                   {{ formatTime(msg.date) }}
                 </p>
@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
               <div class="self-center flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                 <button
                   @click="startReply(msg)"
-                  class="p-1.5 text-slate-500 hover:text-purple-300 rounded-lg hover:bg-slate-800"
+                  class="p-1.5 text-slate-400 hover:text-purple-300 rounded-lg hover:bg-white/10 cursor-pointer"
                   title="Reply"
                 >
                   <Reply class="w-3.5 h-3.5" />
@@ -411,7 +411,7 @@ onBeforeUnmount(() => {
                 <button
                   v-if="msg.messageId"
                   @click="handleDelete(msg)"
-                  class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-500/10"
+                  class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/15 cursor-pointer"
                   title="Delete message"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -422,24 +422,24 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Reply preview -->
-          <div v-if="replyingTo" class="px-3 pt-2 border-t border-slate-800/80">
-            <div class="flex items-center gap-2 bg-slate-950/50 border-l-2 border-purple-500 rounded-lg px-3 py-2">
+          <div v-if="replyingTo" class="px-3 pt-2 border-t border-white/10">
+            <div class="flex items-center gap-2 liquid-glass-subtle border-l-2 border-purple-500 rounded-xl px-3 py-2">
               <Reply class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
               <div class="min-w-0 flex-1">
                 <p class="text-[11px] font-semibold text-purple-300 truncate">Replying to {{ replyingTo.name }}</p>
                 <p class="text-[11px] text-slate-400 truncate">{{ replyingTo.text }}</p>
               </div>
-              <button @click="cancelReply" class="p-1 text-slate-500 hover:text-white flex-shrink-0" title="Cancel reply">
+              <button @click="cancelReply" class="p-1 text-slate-400 hover:text-white flex-shrink-0 cursor-pointer" title="Cancel reply">
                 <X class="w-4 h-4" />
               </button>
             </div>
           </div>
 
           <!-- Sticker picker -->
-          <div v-if="showStickerPicker" class="border-t border-slate-800/80 bg-slate-950/40 px-3 py-2">
+          <div v-if="showStickerPicker" class="border-t border-white/10 liquid-glass-subtle px-3 py-2">
             <div class="flex items-center justify-between mb-2">
-              <p class="text-[11px] font-semibold text-slate-300">Recent stickers</p>
-              <button type="button" @click="showStickerPicker = false" class="p-1 text-slate-500 hover:text-white" title="Close sticker picker">
+              <p class="text-[11px] font-semibold text-slate-200">Recent stickers</p>
+              <button type="button" @click="showStickerPicker = false" class="p-1 text-slate-400 hover:text-white cursor-pointer" title="Close sticker picker">
                 <X class="w-4 h-4" />
               </button>
             </div>
@@ -450,7 +450,7 @@ onBeforeUnmount(() => {
                 type="button"
                 :disabled="chatStore.isSending"
                 @click="handleSendSticker(sticker)"
-                class="h-14 rounded-lg hover:bg-slate-800 disabled:opacity-40 flex items-center justify-center overflow-hidden"
+                class="h-14 rounded-lg hover:bg-white/10 disabled:opacity-40 flex items-center justify-center overflow-hidden cursor-pointer"
                 :title="`Send ${sticker.mediaEmoji || 'sticker'}`"
               >
                 <img
@@ -468,18 +468,18 @@ onBeforeUnmount(() => {
                 <span v-else class="text-3xl">{{ sticker.mediaEmoji || 'Sticker' }}</span>
               </button>
             </div>
-            <p v-else class="text-[11px] text-slate-500">Stickers sent in this chat will appear here.</p>
+            <p v-else class="text-[11px] text-slate-400">Stickers sent in this chat will appear here.</p>
           </div>
 
           <!-- Composer -->
-          <form @submit.prevent="handleSend" class="p-3 flex items-end gap-2" :class="replyingTo ? 'pt-2' : 'border-t border-slate-800/80'">
+          <form @submit.prevent="handleSend" class="p-3 flex items-end gap-2" :class="replyingTo ? 'pt-2' : 'border-t border-white/10'">
             <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
             <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
             <button
               type="button"
               :disabled="chatStore.isSending"
               @click="photoInput?.click()"
-              class="p-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition-colors flex-shrink-0"
+              class="p-2.5 rounded-xl text-slate-400 hover:text-white liquid-glass-pill disabled:opacity-40 transition-all flex-shrink-0 cursor-pointer"
               title="Send image"
             >
               <Image class="w-5 h-5" />
@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
               type="button"
               :disabled="chatStore.isSending"
               @click="videoInput?.click()"
-              class="p-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition-colors flex-shrink-0"
+              class="p-2.5 rounded-xl text-slate-400 hover:text-white liquid-glass-pill disabled:opacity-40 transition-all flex-shrink-0 cursor-pointer"
               title="Send video"
             >
               <Video class="w-5 h-5" />
@@ -496,8 +496,8 @@ onBeforeUnmount(() => {
             <button
               type="button"
               @click="showStickerPicker = !showStickerPicker"
-              :class="showStickerPicker ? 'text-purple-300 bg-purple-500/15' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
-              class="p-2.5 rounded-lg transition-colors flex-shrink-0"
+              :class="showStickerPicker ? 'text-purple-300 border-purple-500/40 bg-purple-500/20' : 'text-slate-400 hover:text-white'"
+              class="p-2.5 rounded-xl liquid-glass-pill transition-all flex-shrink-0 cursor-pointer"
               title="Choose a sticker"
             >
               <Sticker class="w-5 h-5" />
@@ -507,12 +507,12 @@ onBeforeUnmount(() => {
               rows="1"
               placeholder="Type a message..."
               @keydown.enter.exact.prevent="handleSend"
-              class="flex-1 resize-none bg-slate-950/60 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-500 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none max-h-32"
+              class="flex-1 resize-none liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm max-h-32"
             ></textarea>
             <button
               type="submit"
               :disabled="!draft.trim() || chatStore.isSending"
-              class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-xl shadow-lg shadow-purple-500/15 transition-all flex-shrink-0"
+              class="liquid-glass-button disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition-all flex-shrink-0 cursor-pointer"
             >
               <RefreshCw v-if="chatStore.isSending" class="w-5 h-5 animate-spin" />
               <Send v-else class="w-5 h-5" />
@@ -524,23 +524,23 @@ onBeforeUnmount(() => {
       <!-- Members panel -->
       <aside
         v-if="activeGroup"
-        class="lg:col-span-3 border-l border-slate-800/80 flex-col min-h-0"
+        class="lg:col-span-3 border-l border-white/10 flex-col min-h-0"
         :class="showMembers ? 'flex' : 'hidden lg:flex'"
       >
-        <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between">
           <h3 class="text-sm font-bold text-white flex items-center gap-2">
             <Users class="w-4 h-4 text-purple-400" /> Members
           </h3>
-          <span class="text-[10px] text-slate-500">
+          <span class="text-[10px] text-slate-400">
             {{ chatStore.members.length }}<span v-if="chatStore.totalCount !== null"> / {{ chatStore.totalCount }}</span>
           </span>
         </div>
 
-        <div v-if="chatStore.adminError" class="mx-3 mt-3 text-[10px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
+        <div v-if="chatStore.adminError" class="mx-3 mt-3 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-xl px-2.5 py-1.5 backdrop-blur-md">
           Live admin lookup failed: {{ chatStore.adminError }}
         </div>
 
-        <p class="px-4 pt-3 text-[10px] text-slate-500 leading-relaxed">
+        <p class="px-4 pt-3 text-[10px] text-slate-400 leading-relaxed">
           Telegram bots can't list every member. Shown: admins + everyone the bot has seen chat here.
         </p>
 
@@ -548,16 +548,16 @@ onBeforeUnmount(() => {
           <div v-if="chatStore.isLoadingMembers && chatStore.members.length === 0" class="flex justify-center py-6">
             <RefreshCw class="w-5 h-5 text-purple-400 animate-spin" />
           </div>
-          <div v-else-if="chatStore.members.length === 0" class="text-center text-xs text-slate-500 py-6 px-3">
+          <div v-else-if="chatStore.members.length === 0" class="text-center text-xs text-slate-400 py-6 px-3">
             No members discovered yet.
           </div>
 
           <div
             v-for="m in chatStore.members"
             :key="m.userId"
-            class="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-800/30"
+            class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-white/5 transition-all"
           >
-            <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 relative" :class="avatarColor(m.userId)">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 relative shadow-sm" :class="avatarColor(m.userId)">
               {{ initials(memberDisplayName(m)) }}
             </div>
             <div class="min-w-0 flex-1">
@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
                 <Shield v-else-if="m.status === 'administrator'" class="w-3 h-3 text-cyan-400 flex-shrink-0" title="Admin" />
                 <Bot v-if="m.isBot" class="w-3 h-3 text-slate-400 flex-shrink-0" title="Bot" />
               </p>
-              <p class="text-[10px] text-slate-500 truncate">
+              <p class="text-[10px] text-slate-400 truncate">
                 <span v-if="m.username">@{{ m.username }} · </span>{{ m.messageCount }} msg
               </p>
             </div>

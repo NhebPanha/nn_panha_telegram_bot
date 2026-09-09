@@ -209,7 +209,7 @@ const formatTime = (timeStr: string | null) => {
 </script>
 
 <template>
-  <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-6">
+  <div class="liquid-glass rounded-2xl p-6 space-y-6 relative overflow-hidden">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -219,14 +219,14 @@ const formatTime = (timeStr: string | null) => {
       <div class="flex gap-2 w-full sm:w-auto">
         <button
           @click="openBulkModal"
-          class="flex-1 sm:flex-initial bg-slate-800 border border-slate-750 hover:bg-slate-750 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+          class="flex-1 sm:flex-initial liquid-glass-pill hover:text-white text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Upload class="w-4 h-4" />
           Bulk Import
         </button>
         <button
           @click="openAddModal"
-          class="flex-1 sm:flex-initial bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-lg shadow-purple-500/15 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+          class="flex-1 sm:flex-initial liquid-glass-button text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Plus class="w-4 h-4" />
           Add Target
@@ -235,21 +235,21 @@ const formatTime = (timeStr: string | null) => {
     </div>
 
     <!-- Search & Filters -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 liquid-glass-subtle p-3 rounded-xl">
       <div class="relative">
-        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4" />
+        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
         <input
           type="text"
           v-model="searchQuery"
           placeholder="Search by name or Chat ID..."
-          class="w-full bg-slate-950/60 border border-slate-850 focus:border-purple-500 text-white placeholder-slate-500 rounded-xl py-2 px-9 text-xs focus:outline-none transition-all"
+          class="w-full liquid-glass-input rounded-xl py-2 px-9 text-xs"
         />
       </div>
 
       <div>
         <select
           v-model="typeFilter"
-          class="w-full bg-slate-950/60 border border-slate-850 focus:border-purple-500 text-white rounded-xl py-2 px-3 text-xs focus:outline-none transition-all"
+          class="w-full liquid-glass-input rounded-xl py-2 px-3 text-xs"
         >
           <option value="">All Chat Types</option>
           <option value="group">Group</option>
@@ -261,13 +261,13 @@ const formatTime = (timeStr: string | null) => {
     </div>
 
     <!-- Bulk Actions Panel -->
-    <div v-if="selectedGroupIds.length > 0" class="flex items-center justify-between bg-purple-950/30 border border-purple-500/20 px-4 py-3 rounded-xl">
+    <div v-if="selectedGroupIds.length > 0" class="flex items-center justify-between liquid-glass-pill px-4 py-3 rounded-xl border-purple-500/30">
       <span class="text-xs font-semibold text-purple-300">
         {{ selectedGroupIds.length }} item(s) selected
       </span>
       <button
         @click="handleDeleteSelected"
-        class="bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all"
+        class="bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 text-rose-300 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
       >
         <Trash2 class="w-3.5 h-3.5" />
         Delete Selected
@@ -282,7 +282,7 @@ const formatTime = (timeStr: string | null) => {
 
     <!-- Empty State -->
     <div v-else-if="filteredGroups.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="p-4 bg-slate-950/60 rounded-full border border-slate-800 text-slate-500 mb-4">
+      <div class="p-4 bg-white/5 rounded-full border border-white/10 text-slate-400 mb-4 backdrop-blur-md">
         <ShieldAlert class="w-8 h-8" />
       </div>
       <h4 class="text-base font-bold text-slate-200">No Target Chats Found</h4>
@@ -295,10 +295,10 @@ const formatTime = (timeStr: string | null) => {
     <div v-else class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <tr class="border-b border-white/10 text-slate-400 text-xs font-semibold uppercase tracking-wider">
             <th class="py-3 px-3 w-8">
-              <button @click="toggleSelectAll" class="text-slate-500 hover:text-slate-300">
-                <CheckSquare v-if="isAllSelected" class="w-4 h-4 text-purple-500" />
+              <button @click="toggleSelectAll" class="text-slate-400 hover:text-white cursor-pointer">
+                <CheckSquare v-if="isAllSelected" class="w-4 h-4 text-purple-400" />
                 <Square v-else class="w-4 h-4" />
               </button>
             </th>
@@ -311,11 +311,11 @@ const formatTime = (timeStr: string | null) => {
             <th class="py-3 px-3 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-850 text-slate-300 text-xs">
-          <tr v-for="group in filteredGroups" :key="group.id" class="hover:bg-slate-800/10 transition-colors">
+        <tbody class="divide-y divide-white/5 text-slate-200 text-xs">
+          <tr v-for="group in filteredGroups" :key="group.id" class="hover:bg-white/[0.04] transition-colors">
             <td class="py-3.5 px-3">
-              <button @click="toggleSelectGroup(group.id)" class="text-slate-500 hover:text-slate-300">
-                <CheckSquare v-if="selectedGroupIds.includes(group.id)" class="w-4 h-4 text-purple-500" />
+              <button @click="toggleSelectGroup(group.id)" class="text-slate-400 hover:text-white cursor-pointer">
+                <CheckSquare v-if="selectedGroupIds.includes(group.id)" class="w-4 h-4 text-purple-400" />
                 <Square v-else class="w-4 h-4" />
               </button>
             </td>
@@ -339,7 +339,7 @@ const formatTime = (timeStr: string | null) => {
               </span>
               <span
                 v-else
-                class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-500 border border-slate-700/60 flex items-center gap-1 w-max"
+                class="px-2 py-0.5 rounded-full text-[9px] font-bold liquid-glass-pill text-slate-400 flex items-center gap-1 w-max"
               >
                 Unchecked
               </span>
@@ -348,7 +348,7 @@ const formatTime = (timeStr: string | null) => {
               <button
                 @click="handleToggleStatus(group)"
                 class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                :class="group.isActive ? 'bg-purple-600' : 'bg-slate-800'"
+                :class="group.isActive ? 'bg-purple-600 shadow-sm shadow-purple-500/40' : 'bg-slate-850'"
               >
                 <span
                   class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
@@ -356,21 +356,21 @@ const formatTime = (timeStr: string | null) => {
                 />
               </button>
             </td>
-            <td class="py-3.5 px-3 text-slate-500">
+            <td class="py-3.5 px-3 text-slate-400">
               {{ formatTime(group.lastMessageTime) }}
             </td>
             <td class="py-3.5 px-3 text-right">
               <div class="flex items-center justify-end gap-1.5">
                 <button
                   @click="openEditModal(group)"
-                  class="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-all"
+                  class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-all cursor-pointer"
                   title="Edit Settings"
                 >
                   <Edit2 class="w-3.5 h-3.5" />
                 </button>
                 <button
                   @click="handleDeleteGroup(group.id, group.name)"
-                  class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-all"
+                  class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/15 transition-all cursor-pointer"
                   title="Delete Target"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -384,9 +384,9 @@ const formatTime = (timeStr: string | null) => {
 
     <!-- Modal: Add/Edit Target -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div @click="closeModal" class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+      <div @click="closeModal" class="absolute inset-0 bg-slate-950/65 backdrop-blur-md" />
 
-      <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl z-10">
+      <div class="relative w-full max-w-md liquid-glass-elevated rounded-2xl p-6 z-10">
         <h3 class="text-lg font-bold text-white mb-2">
           {{ isEditing ? 'Edit Broadcast Target' : 'Add Broadcast Target' }}
         </h3>
@@ -402,7 +402,7 @@ const formatTime = (timeStr: string | null) => {
               type="text"
               v-model="formChatId"
               placeholder="E.g., -1002233445566 or @my_channel"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm font-mono focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm font-mono"
             />
           </div>
 
@@ -411,7 +411,7 @@ const formatTime = (timeStr: string | null) => {
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Chat Type</label>
             <select
               v-model="formType"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
             >
               <option value="group">Group</option>
               <option value="channel">Channel</option>
@@ -427,7 +427,7 @@ const formatTime = (timeStr: string | null) => {
               type="text"
               v-model="formName"
               placeholder="E.g., Production Alerts Channel"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm"
             />
           </div>
 
@@ -436,13 +436,13 @@ const formatTime = (timeStr: string | null) => {
             <button
               type="button"
               @click="closeModal"
-              class="flex-1 bg-slate-800 hover:bg-slate-750 text-slate-300 text-sm font-medium py-2.5 rounded-xl border border-slate-700/60 transition-all"
+              class="flex-1 liquid-glass-pill hover:text-white text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium py-2.5 rounded-xl shadow-lg shadow-purple-500/15 transition-all"
+              class="flex-1 liquid-glass-button text-white text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               {{ isEditing ? 'Save Changes' : 'Save Target' }}
             </button>
@@ -453,9 +453,9 @@ const formatTime = (timeStr: string | null) => {
 
     <!-- Modal: Bulk Import -->
     <div v-if="showBulkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div @click="closeBulkModal" class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+      <div @click="closeBulkModal" class="absolute inset-0 bg-slate-950/65 backdrop-blur-md" />
 
-      <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl z-10">
+      <div class="relative w-full max-w-md liquid-glass-elevated rounded-2xl p-6 z-10">
         <h3 class="text-lg font-bold text-white mb-2">
           Bulk Import Targets
         </h3>
@@ -471,7 +471,7 @@ const formatTime = (timeStr: string | null) => {
               v-model="bulkImportText"
               placeholder="-10011223344&#10;-10055667788&#10;@my_custom_channel"
               rows="6"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white placeholder-slate-600 rounded-xl py-2.5 px-3.5 text-sm font-mono focus:outline-none resize-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3.5 text-sm font-mono resize-none"
             ></textarea>
           </div>
 
@@ -480,7 +480,7 @@ const formatTime = (timeStr: string | null) => {
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Target Type (Bulk)</label>
             <select
               v-model="bulkImportType"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-white rounded-xl py-2.5 px-3 text-sm focus:outline-none"
+              class="w-full liquid-glass-input rounded-xl py-2.5 px-3 text-sm"
             >
               <option value="group">Group</option>
               <option value="channel">Channel</option>
@@ -494,13 +494,13 @@ const formatTime = (timeStr: string | null) => {
             <button
               type="button"
               @click="closeBulkModal"
-              class="flex-1 bg-slate-800 hover:bg-slate-750 text-slate-300 text-sm font-medium py-2.5 rounded-xl border border-slate-700/60 transition-all"
+              class="flex-1 liquid-glass-pill hover:text-white text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium py-2.5 rounded-xl shadow-lg shadow-purple-500/15 transition-all"
+              class="flex-1 liquid-glass-button text-white text-sm font-medium py-2.5 rounded-xl transition-all cursor-pointer"
             >
               Import Targets
             </button>

@@ -104,10 +104,10 @@ const activeCount = computed(() => {
 </script>
 
 <template>
-  <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-6">
+  <div class="liquid-glass rounded-2xl p-6 space-y-6 relative overflow-hidden">
     <!-- Header -->
     <div class="flex items-center gap-3">
-      <div class="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400">
+      <div class="p-2.5 bg-rose-500/15 border border-rose-500/30 rounded-xl text-rose-400 shadow-sm shadow-rose-500/20 backdrop-blur-md">
         <ShieldAlert class="w-5 h-5" />
       </div>
       <div>
@@ -117,25 +117,25 @@ const activeCount = computed(() => {
     </div>
 
     <!-- Requirements note -->
-    <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 flex items-start gap-3">
-      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
-      <div class="text-xs text-slate-300 space-y-1">
-        <p class="font-bold text-amber-400">For moderation to work, the bot must:</p>
-        <ul class="list-disc list-inside space-y-0.5 text-slate-400">
-          <li>Be an <span class="text-slate-200 font-semibold">admin</span> in the group with the <span class="text-slate-200 font-semibold">"Delete messages"</span> permission.</li>
-          <li>Have <span class="text-slate-200 font-semibold">privacy mode disabled</span> (BotFather → <code class="text-rose-300">/setprivacy</code> → Disable) so it can see all messages.</li>
+    <div class="p-4 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 flex items-start gap-3 backdrop-blur-md shadow-sm">
+      <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
+      <div class="text-xs text-slate-200 space-y-1">
+        <p class="font-bold text-amber-300">For moderation to work, the bot must:</p>
+        <ul class="list-disc list-inside space-y-0.5 text-slate-300">
+          <li>Be an <span class="text-white font-semibold">admin</span> in the group with the <span class="text-white font-semibold">"Delete messages"</span> permission.</li>
+          <li>Have <span class="text-white font-semibold">privacy mode disabled</span> (BotFather → <code class="text-rose-300 font-mono">/setprivacy</code> → Disable) so it can see all messages.</li>
         </ul>
         <p v-if="!botStore.isConfigured" class="text-rose-400 font-semibold pt-1">No bot configured — add one in Bot Settings first.</p>
       </div>
     </div>
 
     <!-- Webhook connection -->
-    <div class="bg-slate-950/40 border border-slate-850 rounded-xl p-4 space-y-3">
+    <div class="liquid-glass-subtle rounded-xl p-4 space-y-3">
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-3">
           <div
             class="p-2 rounded-lg"
-            :class="webhookStore.info.configured ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700/60'"
+            :class="webhookStore.info.configured ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md' : 'liquid-glass-pill text-slate-400'"
           >
             <Webhook class="w-4 h-4" />
           </div>
@@ -149,28 +149,28 @@ const activeCount = computed(() => {
         <button
           @click="handleSetupWebhook"
           :disabled="webhookStore.isLoading || !botStore.isConfigured"
-          class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-semibold py-2 px-3.5 rounded-lg transition-all flex items-center gap-2"
+          class="liquid-glass-button disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
         >
           <RefreshCw v-if="webhookStore.isLoading" class="w-3.5 h-3.5 animate-spin" />
           {{ webhookStore.info.configured ? 'Re-register' : 'Register Webhook' }}
         </button>
       </div>
 
-      <p v-if="webhookStore.info.url" class="text-[10px] text-slate-500 font-mono break-all">
+      <p v-if="webhookStore.info.url" class="text-[10px] text-slate-400 font-mono break-all liquid-glass-pill px-2.5 py-1 rounded-lg">
         {{ webhookStore.info.url }}
       </p>
       <p v-if="webhookStore.info.lastError" class="text-[11px] text-rose-400">
         Last error: {{ webhookStore.info.lastError }}
       </p>
-      <p class="text-[11px] text-slate-500">
+      <p class="text-[11px] text-slate-400">
         Requires a public HTTPS URL — register this after deploying. Telegram cannot reach localhost.
       </p>
     </div>
 
     <!-- Master toggle -->
-    <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-xl p-4">
+    <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
       <div class="flex items-center gap-3">
-        <div class="p-2 rounded-lg" :class="moderationStore.settings.enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700/60'">
+        <div class="p-2 rounded-lg" :class="moderationStore.settings.enabled ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'liquid-glass-pill text-slate-400'">
           <Power class="w-4 h-4" />
         </div>
         <div>
@@ -180,8 +180,8 @@ const activeCount = computed(() => {
       </div>
       <button
         @click="toggle('enabled')"
-        class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0"
-        :class="moderationStore.settings.enabled ? 'bg-emerald-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+        class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
+        :class="moderationStore.settings.enabled ? 'bg-emerald-600 flex justify-end shadow-sm shadow-emerald-500/40' : 'bg-slate-850 flex justify-start'"
       >
         <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
       </button>
@@ -190,9 +190,9 @@ const activeCount = computed(() => {
     <!-- Rule toggles -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.enabled }">
       <!-- Delete links -->
-      <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-xl p-4">
+      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400">
+          <div class="p-2 bg-blue-500/15 border border-blue-500/30 rounded-lg text-blue-400">
             <Link2 class="w-4 h-4" />
           </div>
           <div>
@@ -202,17 +202,17 @@ const activeCount = computed(() => {
         </div>
         <button
           @click="toggle('deleteLinks')"
-          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0"
-          :class="moderationStore.settings.deleteLinks ? 'bg-purple-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
+          :class="moderationStore.settings.deleteLinks ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
         >
           <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
         </button>
       </div>
 
       <!-- Delete stickers -->
-      <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-xl p-4">
+      <div class="flex items-center justify-between liquid-glass-subtle rounded-xl p-4">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-violet-400">
+          <div class="p-2 bg-violet-500/15 border border-violet-500/30 rounded-lg text-violet-400">
             <Sticker class="w-4 h-4" />
           </div>
           <div>
@@ -222,18 +222,18 @@ const activeCount = computed(() => {
         </div>
         <button
           @click="toggle('deleteStickers')"
-          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0"
-          :class="moderationStore.settings.deleteStickers ? 'bg-purple-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+          class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
+          :class="moderationStore.settings.deleteStickers ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
         >
           <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
         </button>
       </div>
 
       <!-- Delete restricted files -->
-      <div class="sm:col-span-2 bg-slate-950/40 border border-slate-850 rounded-xl p-4 space-y-4">
+      <div class="sm:col-span-2 liquid-glass-subtle rounded-xl p-4 space-y-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400">
+            <div class="p-2 bg-rose-500/15 border border-rose-500/30 rounded-lg text-rose-400">
               <FileX class="w-4 h-4" />
             </div>
             <div>
@@ -243,31 +243,31 @@ const activeCount = computed(() => {
           </div>
           <button
             @click="toggle('deleteFiles')"
-            class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0"
-            :class="moderationStore.settings.deleteFiles ? 'bg-purple-600 flex justify-end' : 'bg-slate-800 flex justify-start'"
+            class="w-11 h-6 rounded-full p-0.5 transition-all outline-none flex-shrink-0 cursor-pointer"
+            :class="moderationStore.settings.deleteFiles ? 'bg-purple-600 flex justify-end shadow-sm shadow-purple-500/40' : 'bg-slate-850 flex justify-start'"
           >
             <span class="bg-white w-5 h-5 rounded-full shadow-md"></span>
           </button>
         </div>
 
-        <div class="pt-3 border-t border-slate-800/60 space-y-3" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.deleteFiles }">
+        <div class="pt-3 border-t border-white/10 space-y-3" :class="{ 'opacity-50 pointer-events-none': !moderationStore.settings.deleteFiles }">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <p class="text-[11px] font-semibold text-slate-300">
+              <p class="text-[11px] font-semibold text-slate-200">
                 File Extension Rules ({{ activeCount }} / {{ restrictedExtensions.length }} blocked)
               </p>
-              <span class="text-[10px] text-slate-500 font-mono">(Click extension to toggle ON/OFF)</span>
+              <span class="text-[10px] text-slate-400 font-mono">(Click extension to toggle ON/OFF)</span>
             </div>
             <div class="flex items-center gap-2">
               <button
                 @click="toggleAllExtensions(true)"
-                class="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+                class="px-2.5 py-1 text-[10px] font-semibold rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer"
               >
                 Block All
               </button>
               <button
                 @click="toggleAllExtensions(false)"
-                class="px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750 transition-all"
+                class="px-2.5 py-1 text-[10px] font-semibold rounded-lg liquid-glass-pill text-slate-300 hover:text-white transition-all cursor-pointer"
               >
                 Allow All
               </button>
@@ -291,22 +291,22 @@ const activeCount = computed(() => {
               type="button"
               class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition-all flex items-center gap-1.5 outline-none cursor-pointer"
               :class="isExtensionBlocked(ext) 
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 shadow-sm' 
-                : 'bg-slate-900/80 text-slate-500 border border-slate-800 hover:border-slate-700 hover:text-slate-400 opacity-65'"
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 shadow-sm backdrop-blur-sm' 
+                : 'liquid-glass-pill text-slate-400 hover:text-white hover:border-white/20'"
               :title="isExtensionBlocked(ext) ? `Click to ALLOW ${ext} files` : `Click to BLOCK ${ext} files`"
             >
-              <span class="w-1.5 h-1.5 rounded-full" :class="isExtensionBlocked(ext) ? 'bg-rose-400' : 'bg-slate-600'"></span>
+              <span class="w-1.5 h-1.5 rounded-full" :class="isExtensionBlocked(ext) ? 'bg-rose-400' : 'bg-slate-500'"></span>
               <span>{{ ext }}</span>
               <X v-if="isExtensionBlocked(ext)" class="w-2.5 h-2.5 text-rose-400" />
-              <Check v-else class="w-2.5 h-2.5 text-slate-600" />
+              <Check v-else class="w-2.5 h-2.5 text-slate-500" />
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <p class="text-[11px] text-slate-500">
-      Deleted messages are recorded in the <span class="text-slate-300 font-semibold">Logs</span> tab. Moderation applies to every group the bot administrates.
+    <p class="text-[11px] text-slate-400">
+      Deleted messages are recorded in the <span class="text-white font-semibold">Logs</span> tab. Moderation applies to every group the bot administrates.
     </p>
   </div>
 </template>
