@@ -1,7 +1,26 @@
 {
-  "name": "nn_bot",
+  "name": "teleflow-pro",
+  "version": "2.0.0",
+  "description": "Production-ready Telegram Bot Management, Auto-Reply, Broadcast Scheduling & Moderation Platform",
   "type": "module",
   "private": true,
+  "author": "Nheb Panha <hkmkh26@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NhebPanha/nn_panha_telegram_bot.git"
+  },
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "nuxt",
+    "vue3",
+    "nitro",
+    "cloudflare-workers",
+    "moderation",
+    "broadcast-scheduler",
+    "gemini-ai"
+  ],
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -9,7 +28,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "deploy": "wrangler deploy",
-    "preview:cf": "wrangler dev"
+    "preview:cf": "wrangler dev",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",

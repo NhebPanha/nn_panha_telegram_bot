@@ -69,7 +69,7 @@ onMounted(() => {
 
           <!-- GitHub Link -->
           <a
-            href="https://github.com"
+            href="https://github.com/NhebPanha/nn_panha_telegram_bot"
             target="_blank"
             class="p-2 text-slate-400 hover:text-white transition-all liquid-glass-pill hover:scale-105 active:scale-95 rounded-xl"
             title="GitHub Repository"
@@ -96,10 +96,11 @@ onMounted(() => {
 
     <footer class="relative z-10 border-t border-white/5 bg-slate-950/60 backdrop-blur-md py-6 text-center text-xs text-slate-400">
       <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p>&copy; 2026 TeleFlow System. All rights reserved.</p>
-        <p class="font-mono text-[10px] liquid-glass-pill px-2.5 py-1 rounded-lg">
-          Local: 2026-07-07T13:25:19
-        </p>
+        <p>&copy; 2026 TeleFlow Pro. Engineered by Nheb Panha. All rights reserved.</p>
+        <div class="flex items-center gap-2 font-mono text-[10px]">
+          <span class="liquid-glass-pill px-2.5 py-1 rounded-lg text-purple-300 border border-purple-500/20">v2.0.0 Pro Edition</span>
+          <span class="liquid-glass-pill px-2.5 py-1 rounded-lg text-emerald-400 border border-emerald-500/20">Cloudflare Edge Ready</span>
+        </div>
       </div>
     </footer>
 
