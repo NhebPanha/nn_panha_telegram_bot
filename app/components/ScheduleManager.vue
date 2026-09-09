@@ -384,7 +384,7 @@ const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     <!-- Modal: Create / Edit Schedule -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div @click="showModal = false" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" />
-      <div class="relative w-full max-w-lg bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-sm z-10 p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="relative w-full max-w-lg tf-card-elevated z-10 p-6 space-y-4 max-h-[85vh] overflow-y-auto">
         <h3 class="text-sm font-bold text-white">
           {{ isEditing ? 'Edit Broadcast Schedule' : 'Create Broadcast Schedule' }}
         </h3>

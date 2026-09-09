@@ -536,7 +536,7 @@ const handleDeleteGroup = async (id: string, name: string) => {
     <!-- Modal: Add / Edit Target -->
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div @click="closeModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" />
-      <div class="relative w-full max-w-md bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-sm z-10 p-6 space-y-4">
+      <div class="relative w-full max-w-md tf-card-elevated z-10 p-6 space-y-4">
         <h3 class="text-sm font-bold text-white">
           {{ isEditing ? 'Edit Target Group' : 'Add Broadcast Target' }}
         </h3>
@@ -568,7 +568,7 @@ const handleDeleteGroup = async (id: string, name: string) => {
     <!-- Modal: Bulk Import -->
     <div v-if="showBulkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div @click="showBulkModal = false" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" />
-      <div class="relative w-full max-w-md bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-sm z-10 p-6 space-y-4">
+      <div class="relative w-full max-w-md tf-card-elevated z-10 p-6 space-y-4">
         <h3 class="text-sm font-bold text-white">Bulk Import Targets</h3>
         <p class="text-[11px] text-slate-400">Paste multiple Chat IDs separated by commas or line breaks</p>
         <textarea v-model="bulkImportText" rows="6" placeholder="-10011223344&#10;-10055667788&#10;@my_channel" class="tf-input w-full p-2.5 font-mono text-xs"></textarea>

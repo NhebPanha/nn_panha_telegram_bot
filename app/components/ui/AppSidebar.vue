@@ -170,7 +170,7 @@ const handleItemClick = (item: NavItem) => {
 
 <template>
   <aside
-    class="relative z-20 flex flex-col h-screen border-r transition-all duration-300 select-none bg-[var(--tf-card)] border-[var(--tf-border)] shrink-0"
+    class="relative z-20 flex flex-col h-screen border-r transition-all duration-300 select-none bg-[var(--tf-card)] backdrop-blur-2xl border-[var(--tf-border)] shrink-0 shadow-[1px_0_24px_rgba(0,0,0,0.12)]"
     :class="collapsed ? 'w-16' : 'w-64'"
   >
     <!-- Brand Header -->
@@ -232,7 +232,7 @@ const handleItemClick = (item: NavItem) => {
           :class="[
             collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2',
             activeTab === item.id
-              ? 'bg-[#2481cc] text-white shadow-sm shadow-[#2481cc]/25 font-semibold'
+              ? 'liquid-glass-button text-white font-semibold shadow-md shadow-[#2481cc]/25'
               : 'text-slate-300 hover:text-white hover:bg-white/5'
           ]"
         >
@@ -250,7 +250,7 @@ const handleItemClick = (item: NavItem) => {
           <span
             v-if="!collapsed && item.badge !== undefined"
             class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-            :class="item.badgeColor || (activeTab === item.id ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300')"
+            :class="item.badgeColor || (activeTab === item.id ? 'bg-white/25 text-white' : 'bg-white/10 text-slate-300')"
           >
             {{ item.badge }}
           </span>
@@ -258,7 +258,7 @@ const handleItemClick = (item: NavItem) => {
           <!-- Floating Tooltip when collapsed -->
           <div
             v-if="collapsed"
-            class="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs rounded-md shadow-lg border border-white/10 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2"
+            class="absolute left-full ml-3 px-2.5 py-1.5 tf-card-elevated text-white text-xs rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2"
           >
             <span>{{ item.name }}</span>
             <span
@@ -275,7 +275,7 @@ const handleItemClick = (item: NavItem) => {
     <!-- Bottom Status & System Health -->
     <div class="p-3 border-t border-[var(--tf-border)]">
       <div
-        class="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.02] border border-white/5"
+        class="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10"
         :class="collapsed ? 'justify-center' : ''"
         title="Edge network: Cloudflare Workers | Operational"
       >

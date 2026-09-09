@@ -385,7 +385,7 @@ const getStatusBadge = (status: string) => {
         class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
       ></div>
 
-      <div class="relative w-full max-w-md bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-sm z-10 p-6 space-y-5">
+      <div class="relative w-full max-w-md tf-card-elevated z-10 p-6 space-y-5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <div class="p-2 rounded-lg bg-[#2481cc]/15 text-[#2481cc]">

@@ -312,14 +312,14 @@ onBeforeUnmount(() => {
 
       <!-- 2. MIDDLE PANE: Main Chat Canvas -->
       <section
-        class="flex flex-col min-h-0 bg-slate-950 relative"
+        class="flex flex-col min-h-0 chat-canvas relative"
         :class="[
           activeGroupId ? 'flex' : 'hidden lg:flex',
           showRightPanel && activeGroup ? 'lg:col-span-6' : 'lg:col-span-9'
         ]"
       >
         <!-- Top Chat Header -->
-        <header v-if="activeGroup" class="h-14 px-4 border-b border-[var(--tf-border)] flex items-center justify-between bg-[var(--tf-card)] shrink-0 z-10">
+        <header v-if="activeGroup" class="h-14 px-4 border-b border-[var(--tf-border)] flex items-center justify-between bg-[var(--tf-card)] backdrop-blur-md shrink-0 z-10">
           <div class="flex items-center gap-3 min-w-0">
             <button @click="activeGroupId = null" class="lg:hidden p-1 text-slate-400 hover:text-white cursor-pointer">
               <ArrowLeft class="w-4 h-4" />
@@ -618,7 +618,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Composer Footer -->
-        <form @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
+        <form @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] backdrop-blur-md border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
           <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
 

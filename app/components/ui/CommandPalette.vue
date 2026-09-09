@@ -235,7 +235,7 @@ onUnmounted(() => {
     ></div>
 
     <!-- Palette Box -->
-    <div class="relative w-full max-w-xl bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-md overflow-hidden z-10">
+    <div class="relative w-full max-w-xl tf-card-elevated overflow-hidden z-10">
       <!-- Search Input Header -->
       <div class="flex items-center px-4 border-b border-[var(--tf-border)]">
         <Search class="w-4 h-4 text-slate-400 shrink-0" />

@@ -32,9 +32,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[var(--tf-bg)] text-[var(--tf-text)] flex font-sans overflow-x-hidden">
+  <div class="min-h-screen bg-[var(--tf-bg)] text-[var(--tf-text)] flex font-sans overflow-x-hidden relative">
+    <!-- Fluid Liquid Ambient Blooms (Refraction Backdrop) -->
+    <div class="fixed -top-28 left-1/4 w-[580px] h-[580px] bg-gradient-to-tr from-[#2481cc]/20 via-indigo-600/15 to-purple-600/10 rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-1"></div>
+    <div class="fixed -bottom-28 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-cyan-500/15 via-blue-600/15 to-violet-600/10 rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-2"></div>
+    <div class="fixed top-1/2 left-1/3 w-80 h-80 bg-sky-500/10 rounded-full blur-[120px] pointer-events-none z-0 liquid-orb-3"></div>
+
     <!-- Desktop Collapsible Sidebar -->
-    <div class="hidden lg:block shrink-0">
+    <div class="hidden lg:block shrink-0 relative z-20">
       <AppSidebar
         :active-tab="activeTab"
         :collapsed="sidebarCollapsed"
@@ -65,7 +70,7 @@ onMounted(() => {
     </div>
 
     <!-- Main Content Flow -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen relative z-10">
       <!-- Topbar Header -->
       <AppTopbar
         :active-tab="activeTab"
