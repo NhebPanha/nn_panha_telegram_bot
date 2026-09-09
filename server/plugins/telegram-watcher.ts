@@ -50,7 +50,7 @@ export default defineNitroPlugin((nitroApp) => {
         return schedule(6000)
       }
 
-      const botUserId = parseInt(token.split(':')[0], 10)
+      const botUserId = Number.parseInt((token ?? '').split(':')[0] ?? '0', 10)
 
       // Periodically check if a webhook is active
       try {
