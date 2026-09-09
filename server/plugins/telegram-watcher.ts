@@ -9,6 +9,9 @@ import { handleTelegramUpdate } from '../utils/moderation'
  * and triggers immediate AI auto-reply and moderation.
  */
 export default defineNitroPlugin((nitroApp) => {
+  // Only run persistent polling on Node runtime (local dev or Node server)
+  // Cloudflare Workers uses the webhook endpoint instead.
+  if (typeof process === 'undefined' || !process.versions?.node) {
   // STRICTLY only run in local development mode (nuxt dev).
   // Cloudflare Workers prohibits setTimeout in global scope (code 10021)
   // and relies on webhooks (/api/telegram/webhook) for updates.
