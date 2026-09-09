@@ -41,6 +41,7 @@ export const useAuthStore = defineStore('auth', {
         })
         if (data.success) {
           this.user = data.user
+          this.isInitialized = true
         }
         return data
       } finally {

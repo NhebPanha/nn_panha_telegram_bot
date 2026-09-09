@@ -22,9 +22,20 @@ export async function createSession(event: H3Event, user: { id: string; username
 
   const encrypted = await encryptToken(JSON.stringify(session))
 
+  let isSecure = process.env.NODE_ENV === 'production'
+  try {
+    const proto = getRequestHeader(event, 'x-forwarded-proto')
+    const host = getRequestHeader(event, 'host') || ''
+    if (proto === 'http' || host.includes('localhost') || host.includes('127.0.0.1')) {
+      isSecure = false
+    } else if (proto === 'https') {
+      isSecure = true
+    }
+  } catch {}
+
   setCookie(event, SESSION_COOKIE_NAME, encrypted, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: ONE_DAY_IN_SECONDS
@@ -46,7 +57,7 @@ export async function getSessionUser(event: H3Event): Promise<{ id: string; user
 
     if (Date.now() > session.expiresAt) {
       // Session has expired, clean up the cookie
-      deleteCookie(event, SESSION_COOKIE_NAME)
+      deleteCookie(event, SESSION_COOKIE_NAME, { path: '/' })
       return null
     }
 
@@ -56,7 +67,7 @@ export async function getSessionUser(event: H3Event): Promise<{ id: string; user
     }
   } catch (error) {
     // If decryption fails or JSON parsing fails, cookie is invalid/tampered
-    deleteCookie(event, SESSION_COOKIE_NAME)
+    deleteCookie(event, SESSION_COOKIE_NAME, { path: '/' })
     return null
   }
 }
@@ -65,5 +76,5 @@ export async function getSessionUser(event: H3Event): Promise<{ id: string; user
  * Clears the session cookie.
  */
 export function clearSessionCookie(event: H3Event) {
-  deleteCookie(event, SESSION_COOKIE_NAME)
+  deleteCookie(event, SESSION_COOKIE_NAME, { path: '/' })
 }

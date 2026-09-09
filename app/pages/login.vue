@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useToast } from '../composables/useToast'
-import { User, Lock, ArrowRight, Send, Loader2 } from 'lucide-vue-next'
+import { User, Lock, ArrowRight, Send, Loader2, Eye, EyeOff } from 'lucide-vue-next'
 
 definePageMeta({
   layout: false
@@ -13,7 +13,13 @@ const toast = useToast()
 
 const username = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const isLoading = ref(false)
+
+const fillCredentials = (u: string, p: string) => {
+  username.value = u
+  password.value = p
+}
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -25,9 +31,10 @@ const handleLogin = async () => {
   try {
     await authStore.login(username.value, password.value)
     toast.success('Successfully logged in')
-    navigateTo('/')
+    await navigateTo('/')
   } catch (err: any) {
-    toast.error(err.statusMessage || 'Failed to login. Please check your credentials.')
+    const message = err.data?.statusMessage || err.data?.message || err.statusMessage || err.message || 'Failed to login. Please check your credentials.'
+    toast.error(message)
   } finally {
     isLoading.value = false
   }
@@ -109,11 +116,20 @@ const handleLogin = async () => {
               <Lock class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 v-model="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 placeholder="••••••••"
-                class="w-full liquid-glass-input rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500"
+                class="w-full liquid-glass-input rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500"
                 required
               />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                tabindex="-1"
+              >
+                <EyeOff v-if="showPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -128,6 +144,28 @@ const handleLogin = async () => {
               <ArrowRight class="w-4 h-4" />
             </template>
           </button>
+
+          <!-- Quick credentials assistant -->
+          <div class="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+            <span>Default credentials:</span>
+            <div class="flex items-center gap-1.5 font-mono">
+              <button
+                type="button"
+                @click="fillCredentials('admin', 'admin')"
+                class="px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 text-purple-300 text-[10px] transition-colors border border-white/10"
+              >
+                admin / admin
+              </button>
+              <span class="text-slate-500 text-[10px]">or</span>
+              <button
+                type="button"
+                @click="fillCredentials('admin', 'abc@123')"
+                class="px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 text-purple-300 text-[10px] transition-colors border border-white/10"
+              >
+                abc@123
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </div>

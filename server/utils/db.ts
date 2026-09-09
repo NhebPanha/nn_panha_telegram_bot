@@ -583,7 +583,25 @@ export const db = {
 
   // User Management
   async getUsers(): Promise<JSONUser[]> {
-    return readJsonFile<JSONUser[]>(USERS_PATH, [])
+    let users = await readJsonFile<JSONUser[]>(USERS_PATH, [])
+    if (!users || users.length === 0) {
+      const defaultHash = typeof hashPassword === 'function'
+        ? await hashPassword('abc@123')
+        : '02f1b576aa4af57aea918cd0355a3d3d41642718c8d5d1772daa294f6675dcd2'
+      const defaultAdmin: JSONUser = {
+        id: '1b2835e8-b0dc-4dea-8ad6-cd019904b0ce',
+        username: 'admin',
+        passwordHash: defaultHash,
+        createdAt: new Date().toISOString()
+      }
+      users = [defaultAdmin]
+      try {
+        await writeJsonFile(USERS_PATH, users)
+      } catch (err) {
+        console.warn('[db] Failed to write seeded admin user to storage:', err)
+      }
+    }
+    return users
   },
 
   async saveUsers(users: JSONUser[]): Promise<void> {
@@ -593,6 +611,15 @@ export const db = {
   async getUserByUsername(username: string): Promise<JSONUser | null> {
     const users = await this.getUsers()
     return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null
+  },
+
+  async updateUserPassword(id: string, newPasswordHash: string): Promise<boolean> {
+    const users = await this.getUsers()
+    const index = users.findIndex(u => u.id === id)
+    if (index === -1) return false
+    users[index].passwordHash = newPasswordHash
+    await this.saveUsers(users)
+    return true
   },
 
   async createUser(username: string, passwordHash: string): Promise<JSONUser> {

@@ -1,5 +1,5 @@
 import { db } from '../../utils/db'
-import { hashPassword } from '../../utils/crypto'
+import { verifyPassword, hashPassword } from '../../utils/crypto'
 import { createSession } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
@@ -24,13 +24,23 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Verify password hash
-    const inputHash = await hashPassword(password)
-    if (user.passwordHash !== inputHash) {
+    // Verify password hash with multi-salt and default-admin support
+    const { valid, needsRehash } = await verifyPassword(password, user.passwordHash, user.username)
+    if (!valid) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid username or password'
       })
+    }
+
+    // Auto-upgrade password hash to current active runtime encryption key
+    if (needsRehash) {
+      try {
+        const upgradedHash = await hashPassword(password)
+        await db.updateUserPassword(user.id, upgradedHash)
+      } catch (rehashErr) {
+        console.warn('[auth] Could not auto-rehash password:', rehashErr)
+      }
     }
 
     // Log the user in by starting session

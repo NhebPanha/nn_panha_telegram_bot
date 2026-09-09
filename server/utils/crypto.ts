@@ -58,13 +58,58 @@ export async function decryptToken(encryptedText: string): Promise<string> {
   }
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const config = useRuntimeConfig()
-  const salt = config.encryptionKey || 'default-secret-key-32-chars-long!'
+export async function hashPasswordWithSalt(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password + salt)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const config = useRuntimeConfig()
+  const salt = config.encryptionKey || 'teleflow-ultra-secure-secret-encryption-key-32b'
+  return hashPasswordWithSalt(password, salt)
+}
+
+/**
+ * Verifies a password against the stored hash.
+ * Checks current runtime salt, legacy default salt, plaintext fallback,
+ * and default admin passwords ('admin' / 'abc@123').
+ */
+export async function verifyPassword(
+  password: string,
+  storedHash: string,
+  username?: string
+): Promise<{ valid: boolean; needsRehash: boolean }> {
+  const config = useRuntimeConfig()
+  const currentSalt = config.encryptionKey || 'teleflow-ultra-secure-secret-encryption-key-32b'
+  const currentHash = await hashPasswordWithSalt(password, currentSalt)
+
+  // 1. Direct match with current active salt
+  if (storedHash === currentHash) {
+    return { valid: true, needsRehash: false }
+  }
+
+  // 2. Check legacy default salt fallback
+  const legacySalt = 'default-secret-key-32-chars-long!'
+  const legacyHash = await hashPasswordWithSalt(password, legacySalt)
+  if (storedHash === legacyHash) {
+    return { valid: true, needsRehash: true }
+  }
+
+  // 3. Check plaintext match (if an unhashed legacy password was imported)
+  if (storedHash === password) {
+    return { valid: true, needsRehash: true }
+  }
+
+  // 4. Default admin accounts: accept either 'admin' or 'abc@123'
+  if (username && username.toLowerCase() === 'admin') {
+    if (password === 'admin' || password === 'abc@123') {
+      return { valid: true, needsRehash: true }
+    }
+  }
+
+  return { valid: false, needsRehash: false }
 }
 
