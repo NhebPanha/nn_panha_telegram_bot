@@ -1,7 +1,7 @@
 [
     {
         "id": 1,
-        "name": "Panha ~ bot",
+        "name": "BOT 🤖",
         "chatId": "-5421159575",
         "active": true,
         "type": "group",
@@ -17,10 +17,10 @@
     },
     {
         "id": 3,
-        "name": "Default Group (Env)",
+        "name": "panha'bot",
         "chatId": "@pp_panha_bot",
         "active": true,
-        "type": "group",
+        "type": "channel",
         "createdAt": "2026-07-25T02:30:00.021Z"
     }
 ]

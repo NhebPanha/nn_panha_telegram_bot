@@ -1,4 +1,4 @@
-import { db, ModerationSettings } from './db'
+import { db, ModerationSettings, JSONGroup } from './db'
 import {
   deleteMessage,
   getChatMember,
@@ -235,12 +235,28 @@ async function autoRegisterChat(chat: {
 }) {
   const chatId = String(chat.id)
   const existing = await db.getGroupByChatId(chatId)
-  if (existing) return
 
   const name =
     chat.title ||
     [chat.first_name, chat.last_name].filter(Boolean).join(' ') ||
     (chat.username ? `@${chat.username}` : `Chat ${chatId}`)
+
+  if (existing) {
+    // Real-time update if group title or type was changed on Telegram
+    const updates: Partial<JSONGroup> = {}
+    if (name && name !== existing.name) {
+      updates.name = name
+    }
+    if (chat.type && chat.type !== existing.type) {
+      updates.type = chat.type
+    }
+    if (Object.keys(updates).length > 0) {
+      await db.updateGroup(existing.id, updates)
+      console.log(`[Discovery] Real-time updated ${chat.type} "${existing.name}" -> "${name}" (${chatId})`)
+    }
+    return
+  }
+
   await db.createGroup(name, chatId, chat.type, true)
   console.log(`[Discovery] Auto-registered ${chat.type} "${name}" (${chatId})`)
 }
@@ -482,6 +498,27 @@ export async function handleTelegramUpdate(token: string, botUserId: number, upd
   const msg =
     update.message || update.channel_post || update.edited_message || update.edited_channel_post
   if (!msg) return
+
+  // Handle group migration to supergroup (e.g. -54xxx -> -100xxx)
+  if (msg.migrate_to_chat_id) {
+    const oldChatId = String(msg.chat.id)
+    const newChatId = String(msg.migrate_to_chat_id)
+    const group = await db.getGroupByChatId(oldChatId)
+    if (group) {
+      await db.updateGroup(group.id, { chatId: newChatId, type: 'supergroup' })
+      console.log(`[Discovery] Migrated group "${group.name}" from ${oldChatId} to supergroup ${newChatId}`)
+    }
+  }
+
+  // Handle explicit Telegram chat rename event (new_chat_title)
+  if (msg.new_chat_title) {
+    const targetChatId = String(msg.migrate_to_chat_id || msg.chat.id)
+    const group = await db.getGroupByChatId(targetChatId)
+    if (group && group.name !== msg.new_chat_title) {
+      await db.updateGroup(group.id, { name: msg.new_chat_title })
+      console.log(`[Discovery] Renamed chat ${targetChatId} to "${msg.new_chat_title}"`)
+    }
+  }
 
   await autoRegisterChat(msg.chat)
 

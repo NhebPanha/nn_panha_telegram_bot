@@ -89,12 +89,18 @@ const handleDelete = async (msg: ChatMessage) => {
   }
 }
 
+let pollCount = 0
 const refresh = async () => {
   if (!activeGroupId.value) return
-  await Promise.all([
+  pollCount++
+  const promises: Promise<any>[] = [
     chatStore.fetchMessages(activeGroupId.value),
     chatStore.fetchMembers(activeGroupId.value)
-  ])
+  ]
+  if (pollCount % 3 === 0) {
+    promises.push(groupsStore.fetchGroups())
+  }
+  await Promise.all(promises)
 }
 
 const handleSend = async () => {

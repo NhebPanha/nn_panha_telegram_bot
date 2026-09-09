@@ -91,6 +91,7 @@ const openAddModal = () => {
   formParseMode.value = 'HTML'
   formTargetGroupIds.value = []
   showModal.value = true
+  groupsStore.fetchGroups()
 }
 
 const openEditModal = (schedule: any) => {
@@ -108,6 +109,7 @@ const openEditModal = (schedule: any) => {
   formParseMode.value = schedule.parseMode || 'HTML'
   formTargetGroupIds.value = Array.isArray(schedule.targetGroupIds) ? [...schedule.targetGroupIds] : []
   showModal.value = true
+  groupsStore.fetchGroups()
 }
 
 const closeModal = () => {

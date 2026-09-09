@@ -71,6 +71,9 @@ export interface TelegramIncomingMessage {
   voice?: { file_id: string; mime_type?: string; duration?: number }
   document?: TelegramDocument
   reply_to_message?: TelegramIncomingMessage
+  new_chat_title?: string
+  migrate_to_chat_id?: number
+  migrate_from_chat_id?: number
 }
 
 export interface TelegramChatMemberUpdated {
