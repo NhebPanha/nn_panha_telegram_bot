@@ -19,6 +19,7 @@ const emit = defineEmits<{
     ></div>
 
     <!-- Modal Content -->
+    <div class="relative w-full max-w-2xl bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-md z-10 max-h-[85vh] overflow-y-auto">
     <div class="relative w-full max-w-2xl tf-card-elevated z-10 max-h-[85vh] overflow-y-auto">
       <div class="p-5 border-b border-[var(--tf-border)] flex items-center justify-between">
         <div class="flex items-center gap-2.5">

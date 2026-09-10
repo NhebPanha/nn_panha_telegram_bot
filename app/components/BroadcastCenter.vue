@@ -435,6 +435,7 @@ if (selectedGroupIds.value.length === 0) {
 
       <!-- Right: Mobile Telegram Preview Frame -->
       <div class="lg:col-span-5 flex justify-center">
+        <div class="w-full max-w-sm rounded-3xl border-4 border-slate-700 bg-[#0d121d] p-4 shadow-sm space-y-4">
         <div class="w-full max-w-sm rounded-3xl border-4 border-white/20 bg-slate-900/70 backdrop-blur-xl p-4 shadow-xl space-y-4 ring-1 ring-white/10">
           <div class="flex items-center justify-between text-[10px] text-slate-400 border-b border-white/10 pb-2">
             <div class="flex items-center gap-1.5">

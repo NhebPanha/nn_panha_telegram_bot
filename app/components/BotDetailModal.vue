@@ -97,6 +97,7 @@ const copyUsername = () => {
     ></div>
 
     <!-- Modal Content -->
+    <div class="relative w-full max-w-3xl bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-xl shadow-sm z-10 max-h-[90vh] flex flex-col overflow-hidden">
     <div class="relative w-full max-w-3xl tf-card-elevated z-10 max-h-[90vh] flex flex-col overflow-hidden">
       <!-- Bot Header -->
       <div class="p-6 border-b border-[var(--tf-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
