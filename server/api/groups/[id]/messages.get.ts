@@ -1,18 +1,24 @@
 import { db } from '../../../utils/db'
+import { resolveGroup } from '../../../utils/group-resolver'
 
 /**
  * Return the stored conversation history for a group (Telegram-style chat view).
  */
 export default defineEventHandler(async (event) => {
   const idStr = getRouterParam(event, 'id')
-  const id = Number(idStr)
-  if (!idStr || isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid Group ID' })
+  if (!idStr) {
+    throw createError({ statusCode: 400, statusMessage: 'Group ID is required' })
   }
 
-  const group = await db.getGroupById(id)
+  const group = await resolveGroup(idStr)
   if (!group) {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+    // If chat has no messages and group not found, return empty array rather than crashing
+    return {
+      groupId: idStr,
+      chatId: idStr,
+      name: `Chat ${idStr}`,
+      messages: []
+    }
   }
 
   const limitRaw = Number(getQuery(event).limit)

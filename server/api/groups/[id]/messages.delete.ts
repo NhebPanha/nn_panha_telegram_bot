@@ -1,18 +1,16 @@
 import { db } from '../../../utils/db'
+import { resolveGroup } from '../../../utils/group-resolver'
 
 /**
- * Clear a group's stored conversation history from the dashboard (like
- * Telegram's "Delete chat"). This only removes the locally stored copy — a bot
- * cannot wipe a group's history on Telegram's servers.
+ * Clear a group's stored conversation history from the dashboard.
  */
 export default defineEventHandler(async (event) => {
   const idStr = getRouterParam(event, 'id')
-  const id = Number(idStr)
-  if (!idStr || isNaN(id)) {
+  if (!idStr) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid Group ID' })
   }
 
-  const group = await db.getGroupById(id)
+  const group = await resolveGroup(idStr)
   if (!group) {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }

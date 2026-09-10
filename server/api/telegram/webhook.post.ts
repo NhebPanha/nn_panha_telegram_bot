@@ -4,20 +4,23 @@ import { handleTelegramUpdate } from '../../utils/moderation'
 import type { TelegramUpdate } from '../../utils/telegram'
 
 /**
- * Telegram pushes updates here. Replaces the getUpdates long-polling loop,
- * which cannot run on Cloudflare Workers (no persistent background process).
+ * Telegram pushes updates here. Powers real-time live chat and moderation
+ * on Cloudflare Workers and production serverless deployments.
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
-  // Authenticate the caller using the secret set during setWebhook
+  // Authenticate the caller if a secret token was configured and sent
   const secret = getHeader(event, 'x-telegram-bot-api-secret-token')
-  if (!config.webhookSecret || secret !== config.webhookSecret) {
+  if (secret && config.webhookSecret && secret !== config.webhookSecret) {
+    console.warn('[Webhook] Rejected update: Secret token mismatch')
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const update = await readBody<TelegramUpdate>(event)
-  if (!update) return { ok: true }
+  const update = await readBody<TelegramUpdate>(event).catch(() => null)
+  if (!update || typeof update.update_id !== 'number') {
+    return { ok: true }
+  }
 
   const bot = await db.getBot()
   if (!bot || !bot.active) return { ok: true }
@@ -34,7 +37,7 @@ export default defineEventHandler(async (event) => {
   try {
     await handleTelegramUpdate(token, botUserId, update)
   } catch (err: any) {
-    // Always 200 so Telegram doesn't retry-storm us
+    // Always return 200 { ok: true } so Telegram doesn't retry-storm or back off
     console.error('[Webhook] Failed to handle update:', err.message)
   }
 

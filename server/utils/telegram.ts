@@ -301,24 +301,26 @@ export async function sendTelegramMessage(
   token: string,
   chatId: string,
   text: string,
-  parseMode: 'HTML' | 'MarkdownV2' = 'HTML',
+  parseMode?: 'HTML' | 'MarkdownV2',
   replyToMessageId?: number
 ): Promise<{ message_id: number }> {
+  const payload: any = {
+    chat_id: chatId,
+    text: text,
+    ...(replyToMessageId
+      ? { reply_parameters: { message_id: replyToMessageId, allow_sending_without_reply: true } }
+      : {})
+  }
+  if (parseMode) {
+    payload.parse_mode = parseMode
+  }
+
   try {
     const response = await $fetch<{ ok: boolean; result: { message_id: number } }>(
       `https://api.telegram.org/bot${token}/sendMessage`,
       {
         method: 'POST',
-        body: {
-          chat_id: chatId,
-          text: text,
-          parse_mode: parseMode,
-          // reply_parameters is the current API; allow_sending_without_reply
-          // avoids an error if the target message was already deleted.
-          ...(replyToMessageId
-            ? { reply_parameters: { message_id: replyToMessageId, allow_sending_without_reply: true } }
-            : {})
-        }
+        body: payload
       }
     )
     if (!response.ok) {
@@ -326,12 +328,23 @@ export async function sendTelegramMessage(
     }
     return response.result
   } catch (error: any) {
+    // If parse error happened (e.g. unescaped HTML characters < or & in plain text), retry without parse_mode
+    if (parseMode && (error.message?.includes("can't parse entities") || error.data?.description?.includes("can't parse entities"))) {
+      delete payload.parse_mode
+      try {
+        const retry = await $fetch<{ ok: boolean; result: { message_id: number } }>(
+          `https://api.telegram.org/bot${token}/sendMessage`,
+          { method: 'POST', body: payload }
+        )
+        if (retry.ok) return retry.result
+      } catch {}
+    }
     const message = error.data?.description || error.message || 'Unknown error'
     throw new Error(`Telegram Send Message Failed: ${message}`)
   }
 }
 
-/** Send a Telegram sticker already known to the bot (by file_id). */
+/** Send a Telegram sticker already known to the bot (by file_id or sticker URL). */
 export async function sendTelegramSticker(
   token: string,
   chatId: string,
@@ -364,31 +377,48 @@ export interface TelegramSentMediaMessage {
   message_id: number
   photo?: Array<{ file_id: string }>
   video?: { file_id: string; mime_type?: string }
+  sticker?: { file_id: string; emoji?: string }
 }
 
 async function sendTelegramMediaUpload(
   token: string,
   chatId: string,
-  method: 'sendPhoto' | 'sendVideo',
+  method: 'sendPhoto' | 'sendVideo' | 'sendSticker',
   media: Blob,
   fileName: string,
   caption?: string,
   replyToMessageId?: number
 ): Promise<TelegramSentMediaMessage> {
   try {
+    // Detach incoming stream buffer into memory for Cloudflare Workers compatibility
+    const buffer = await media.arrayBuffer()
+    const defaultMime = method === 'sendPhoto' ? 'image/jpeg' : (method === 'sendVideo' ? 'video/mp4' : 'image/webp')
+    const cleanBlob = new Blob([buffer], {
+      type: (media as any).type || defaultMime
+    })
+
     const form = new FormData()
-    form.set('chat_id', chatId)
-    form.set(method === 'sendPhoto' ? 'photo' : 'video', media, fileName)
-    if (caption) form.set('caption', caption)
-    if (replyToMessageId) {
-      form.set('reply_parameters', JSON.stringify({ message_id: replyToMessageId, allow_sending_without_reply: true }))
+    form.append('chat_id', chatId)
+    const field = method === 'sendPhoto' ? 'photo' : (method === 'sendVideo' ? 'video' : 'sticker')
+    const defaultName = method === 'sendPhoto' ? 'photo.jpg' : (method === 'sendVideo' ? 'video.mp4' : 'sticker.webp')
+    form.append(field, cleanBlob, fileName || defaultName)
+    if (caption && method !== 'sendSticker') {
+      form.append('caption', caption)
     }
-    const response = await $fetch<{ ok: boolean; result: TelegramSentMediaMessage; description?: string }>(
-      `https://api.telegram.org/bot${token}/${method}`,
-      { method: 'POST', body: form }
-    )
-    if (!response.ok) throw new Error(response.description || 'Telegram API responded with ok: false')
-    return response.result
+    if (replyToMessageId && Number.isFinite(replyToMessageId)) {
+      form.append('reply_parameters', JSON.stringify({ message_id: replyToMessageId, allow_sending_without_reply: true }))
+    }
+
+    // Native fetch ensures the boundary parameter is automatically and correctly calculated
+    const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: 'POST',
+      body: form
+    })
+    const data = (await res.json()) as { ok: boolean; result: TelegramSentMediaMessage; description?: string }
+    if (!data.ok) {
+      throw new Error(data.description || 'Telegram API responded with ok: false')
+    }
+    return data.result
   } catch (error: any) {
     const message = error.data?.description || error.message || 'Unknown error'
     throw new Error(`Telegram ${method} Failed: ${message}`)
@@ -405,6 +435,12 @@ export function sendTelegramVideoUpload(
   token: string, chatId: string, video: Blob, fileName: string, caption?: string, replyToMessageId?: number
 ) {
   return sendTelegramMediaUpload(token, chatId, 'sendVideo', video, fileName, caption, replyToMessageId)
+}
+
+export function sendTelegramStickerUpload(
+  token: string, chatId: string, sticker: Blob, fileName = 'sticker.webp', replyToMessageId?: number
+) {
+  return sendTelegramMediaUpload(token, chatId, 'sendSticker', sticker, fileName, undefined, replyToMessageId)
 }
 
 export async function sendTelegramPhoto(

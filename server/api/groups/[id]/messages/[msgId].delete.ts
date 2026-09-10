@@ -1,27 +1,24 @@
 import { db } from '../../../../utils/db'
 import { decryptToken } from '../../../../utils/crypto'
+import { resolveGroup } from '../../../../utils/group-resolver'
 import { deleteMessage } from '../../../../utils/telegram'
 
 /**
  * Delete a message from the group (and from stored history).
- * `msgId` is the Telegram message_id. The bot can always delete its own
- * messages; deleting another member's message requires the bot to be an admin
- * with the "delete messages" permission.
  */
 export default defineEventHandler(async (event) => {
   const idStr = getRouterParam(event, 'id')
   const msgIdStr = getRouterParam(event, 'msgId')
-  const id = Number(idStr)
   const msgId = Number(msgIdStr)
 
-  if (!idStr || isNaN(id)) {
+  if (!idStr) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid Group ID' })
   }
   if (!msgIdStr || isNaN(msgId)) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid Message ID' })
   }
 
-  const group = await db.getGroupById(id)
+  const group = await resolveGroup(idStr)
   if (!group) {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }

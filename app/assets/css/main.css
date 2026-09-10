@@ -116,12 +116,9 @@ html.theme-light .border-white\/5 {
 }
 
 /* ============================================================
-   TELEFLOW PRO CORE UTILITY CLASSES
    LIQUID GLASS CORE UTILITIES & SURFACES
    ============================================================ */
 
-/* Primary Card Component */
-.tf-card {
 /* Primary Liquid Glass Card */
 .tf-card,
 .liquid-glass {
@@ -129,9 +126,6 @@ html.theme-light .border-white\/5 {
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
   border: 1px solid var(--tf-border);
-  border-radius: 0.75rem; /* 12px */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   border-radius: 1rem; /* 16px */
   box-shadow:
     inset 0 1px 1px 0 var(--tf-shine),
@@ -139,8 +133,6 @@ html.theme-light .border-white\/5 {
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.tf-card-interactive {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 html.theme-light .tf-card,
 html.theme-light .liquid-glass {
   background-color: rgba(255, 255, 255, 0.78);
@@ -149,7 +141,6 @@ html.theme-light .liquid-glass {
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 1),
     0 12px 32px -8px rgba(148, 163, 184, 0.25);
 }
-.tf-card-interactive:hover {
 
 /* Interactive Card with Specular Sheen on Hover */
 .tf-card-interactive,
@@ -160,15 +151,12 @@ html.theme-light .liquid-glass {
 .tf-card-interactive:hover,
 .liquid-glass-interactive:hover {
   border-color: var(--tf-border-hover);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.12);
   box-shadow:
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.28),
     0 14px 38px -6px rgba(0, 0, 0, 0.45);
   transform: translateY(-2px);
 }
 
-/* Elevated Surface */
-.tf-card-elevated {
 html.theme-light .tf-card-interactive:hover,
 html.theme-light .liquid-glass-interactive:hover {
   border-color: rgba(36, 129, 204, 0.4);
@@ -181,9 +169,6 @@ html.theme-light .liquid-glass-interactive:hover {
 .tf-card-elevated,
 .liquid-glass-elevated {
   background-color: var(--tf-card-elevated);
-  border: 1px solid var(--tf-border);
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -193,8 +178,6 @@ html.theme-light .liquid-glass-interactive:hover {
     0 20px 50px -10px rgba(0, 0, 0, 0.55);
 }
 
-/* Subtle Card */
-.tf-card-subtle {
 html.theme-light .tf-card-elevated,
 html.theme-light .liquid-glass-elevated {
   background-color: rgba(255, 255, 255, 0.92);
@@ -211,14 +194,10 @@ html.theme-light .liquid-glass-elevated {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--tf-border-subtle);
-  border-radius: 0.625rem; /* 10px */
   border-radius: 0.75rem;
   box-shadow: inset 0 1px 0 0 var(--tf-shine);
 }
 
-/* Input Fields */
-.tf-input {
-  background-color: rgba(15, 23, 42, 0.6);
 html.theme-light .tf-card-subtle,
 html.theme-light .liquid-glass-subtle {
   background-color: rgba(241, 245, 249, 0.75);
@@ -237,17 +216,12 @@ html.theme-light .liquid-glass-subtle {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--tf-border);
-  border-radius: 0.5rem; /* 8px */
   border-radius: 0.625rem;
   color: var(--tf-text);
   font-size: 0.875rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   box-shadow: inset 0 1.5px 3px 0 rgba(0, 0, 0, 0.25);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
-html.theme-light .tf-input {
-  background-color: #ffffff;
-  border-color: #cbd5e1;
 
 html.theme-light .tf-input,
 html.theme-light .liquid-glass-input {
@@ -256,22 +230,16 @@ html.theme-light .liquid-glass-input {
   box-shadow: inset 0 1px 2px 0 rgba(148, 163, 184, 0.12);
   color: #0f172a;
 }
-.tf-input:focus {
 
 .tf-input:focus,
 .liquid-glass-input:focus {
   outline: none;
-  border-color: #2481cc;
-  box-shadow: 0 0 0 3px var(--tf-primary-glow);
   border-color: rgba(36, 129, 204, 0.8);
   box-shadow:
     0 0 0 3px var(--tf-primary-glow),
     inset 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
-/* Buttons */
-.tf-btn-primary {
-  background-color: #2481cc;
 html.theme-light .tf-input:focus,
 html.theme-light .liquid-glass-input:focus {
   box-shadow:
@@ -286,20 +254,14 @@ html.theme-light .liquid-glass-input:focus {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-weight: 500;
+  border-radius: 0.625rem;
   box-shadow:
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
     0 8px 24px -4px rgba(36, 129, 204, 0.45);
-  color: #ffffff;
-  font-weight: 500;
-  border-radius: 0.5rem; /* 8px */
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(36, 129, 204, 0.3);
-  border-radius: 0.625rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.tf-btn-primary:hover:not(:disabled) {
-  background-color: #1d73b8;
-  box-shadow: 0 2px 6px rgba(36, 129, 204, 0.4);
 
 .tf-btn-primary:hover:not(:disabled),
 .liquid-glass-button:hover:not(:disabled) {
@@ -309,8 +271,6 @@ html.theme-light .liquid-glass-input:focus {
     0 12px 28px -4px rgba(36, 129, 204, 0.6);
   transform: translateY(-1px);
 }
-.tf-btn-primary:active:not(:disabled) {
-  transform: translateY(1px);
 
 .tf-btn-primary:active:not(:disabled),
 .liquid-glass-button:active:not(:disabled) {
@@ -326,16 +286,12 @@ html.theme-light .liquid-glass-input:focus {
   border: 1px solid var(--tf-border);
   color: var(--tf-text);
   font-weight: 500;
-  border-radius: 0.5rem;
-  transition: all 0.15s ease;
   border-radius: 0.625rem;
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html.theme-light .tf-btn-secondary {
-  background-color: #f1f5f9;
-  border-color: #e2e8f0;
   background-color: rgba(255, 255, 255, 0.7);
   border-color: rgba(226, 232, 240, 0.9);
   color: #334155;
@@ -343,20 +299,15 @@ html.theme-light .tf-btn-secondary {
 }
 
 .tf-btn-secondary:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.09);
   background-color: rgba(255, 255, 255, 0.1);
   border-color: var(--tf-border-hover);
   transform: translateY(-1px);
 }
 
 html.theme-light .tf-btn-secondary:hover:not(:disabled) {
-  background-color: #e2e8f0;
   background-color: rgba(241, 245, 249, 0.9);
 }
 
-/* Badges & Pills */
-.tf-pill {
-  background-color: rgba(255, 255, 255, 0.05);
 /* Frosted Badges & Status Pills */
 .tf-pill,
 .liquid-glass-pill {

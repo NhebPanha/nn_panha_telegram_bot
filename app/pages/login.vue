@@ -44,14 +44,12 @@ const handleLogin = async () => {
 
 <template>
   <div class="min-h-screen bg-[var(--tf-bg)] text-[var(--tf-text)] flex items-center justify-center p-4 font-sans select-none relative overflow-hidden">
-    <div class="relative z-10 w-full max-w-4xl bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-2xl shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-2">
     <!-- Fluid Liquid Ambient Blooms (Refraction Backdrop) -->
     <div class="fixed -top-28 left-1/4 w-[580px] h-[580px] bg-gradient-to-tr from-[#2481cc]/20 via-indigo-600/15 to-purple-600/10 rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-1"></div>
     <div class="fixed -bottom-28 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-cyan-500/15 via-blue-600/15 to-violet-600/10 rounded-full blur-[140px] pointer-events-none z-0 liquid-orb-2"></div>
 
     <div class="relative z-10 w-full max-w-4xl tf-card-elevated overflow-hidden grid grid-cols-1 md:grid-cols-2">
       <!-- Left: Brand Panel -->
-      <div class="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-sky-950/40 via-[var(--tf-card)] to-slate-950 border-r border-[var(--tf-border)] relative">
       <div class="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-sky-950/30 via-slate-900/40 to-slate-950/50 border-r border-[var(--tf-border)] relative">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-[#2481cc] flex items-center justify-center text-white shadow-sm shadow-[#2481cc]/40">
@@ -92,7 +90,6 @@ const handleLogin = async () => {
       </div>
 
       <!-- Right: Form Panel -->
-      <div class="p-8 sm:p-10 flex flex-col justify-center bg-[var(--tf-card)]">
       <div class="p-8 sm:p-10 flex flex-col justify-center bg-transparent">
         <!-- Mobile Logo Header -->
         <div class="flex items-center gap-3 md:hidden mb-8">

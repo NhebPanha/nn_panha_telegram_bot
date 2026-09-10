@@ -1,23 +1,29 @@
 import { db } from '../../../utils/db'
 import { decryptToken } from '../../../utils/crypto'
+import { resolveGroup } from '../../../utils/group-resolver'
 import { getChatAdministrators, getChatMemberCount } from '../../../utils/telegram'
 
 /**
  * Return the members the bot knows about in a group: everyone it has observed
- * posting a message, merged with the live administrator list. The Telegram Bot
- * API cannot enumerate a group's full membership, so `totalCount` (the true
- * size) is reported separately from the `members` we can actually detail.
+ * posting a message, merged with the live administrator list.
  */
 export default defineEventHandler(async (event) => {
   const idStr = getRouterParam(event, 'id')
-  const id = Number(idStr)
-  if (!idStr || isNaN(id)) {
+  if (!idStr) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid Group ID' })
   }
 
-  const group = await db.getGroupById(id)
+  const group = await resolveGroup(idStr)
   if (!group) {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+    return {
+      groupId: idStr,
+      chatId: idStr,
+      name: `Chat ${idStr}`,
+      totalCount: null,
+      knownCount: 0,
+      adminError: null,
+      members: []
+    }
   }
 
   // Members discovered from incoming messages

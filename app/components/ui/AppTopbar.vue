@@ -58,7 +58,6 @@ const currentView = computed(() => tabTitles[props.activeTab] || { title: 'Dashb
 </script>
 
 <template>
-  <header class="h-16 px-4 sm:px-6 border-b flex items-center justify-between bg-[var(--tf-card)] border-[var(--tf-border)] sticky top-0 z-30 select-none">
   <header class="h-16 px-4 sm:px-6 border-b flex items-center justify-between bg-[var(--tf-card)] backdrop-blur-2xl border-[var(--tf-border)] sticky top-0 z-30 select-none shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
     <!-- Left: Mobile menu button + Title/Breadcrumb -->
     <div class="flex items-center gap-3">
@@ -83,7 +82,6 @@ const currentView = computed(() => tabTitles[props.activeTab] || { title: 'Dashb
       <button
         type="button"
         @click="emit('open-search')"
-        class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-slate-400 bg-white/[0.04] border border-white/10 hover:border-white/20 hover:text-slate-200 transition-all cursor-pointer"
         class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-slate-400 bg-white/[0.04] backdrop-blur-md border border-white/10 hover:border-white/20 hover:text-slate-200 transition-all cursor-pointer"
       >
         <div class="flex items-center gap-2">

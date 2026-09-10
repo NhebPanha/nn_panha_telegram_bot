@@ -33,6 +33,19 @@ export default defineEventHandler(async (event) => {
       true
     )
 
+    // 4. Auto-register webhook with Telegram if running on a public HTTPS URL
+    const config = useRuntimeConfig()
+    const origin = config.publicUrl || getRequestURL(event).origin
+    if (origin && origin.startsWith('https://') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+      try {
+        const webhookUrl = `${origin.replace(/\/$/, '')}/api/telegram/webhook`
+        await setTelegramWebhook(token, webhookUrl, config.webhookSecret)
+        console.log(`[Bot] Auto-registered webhook: ${webhookUrl}`)
+      } catch (webhookErr: any) {
+        console.warn(`[Bot] Auto webhook notice: ${webhookErr.message}`)
+      }
+    }
+
     return {
       success: true,
       bot: {

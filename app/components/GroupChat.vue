@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGroupsStore } from '../stores/groups'
 import { useChatStore, type ReplyTarget, type ChatMessage } from '../stores/chat'
+import { useWebhookStore } from '../stores/webhook'
 import { useToast } from '../composables/useToast'
 import {
   Send,
@@ -32,11 +33,16 @@ import {
   Link,
   ShieldAlert,
   Sparkles,
-  Lock
+  Lock,
+  Upload,
+  AlertTriangle,
+  Zap,
+  Plus
 } from 'lucide-vue-next'
 
 const groupsStore = useGroupsStore()
 const chatStore = useChatStore()
+const webhookStore = useWebhookStore()
 const toast = useToast()
 
 const activeGroupId = ref<string | null>(null)
@@ -51,14 +57,40 @@ const rightPanelTab = ref<'info' | 'members' | 'media' | 'files' | 'links'>('inf
 const replyingTo = ref<ReplyTarget | null>(null)
 const showStickerPicker = ref(false)
 const showEmojiPicker = ref(false)
+const stickerTab = ref<'featured' | 'recents' | 'custom'>('featured')
+const customStickerInput = ref('')
+const isEnablingWebhook = ref(false)
+
+const showAddGroupModal = ref(false)
+const newGroupChatId = ref('')
+const newGroupName = ref('')
+const isAddingGroup = ref(false)
+
 const messagesContainer = ref<HTMLElement | null>(null)
 const messagesEnd = ref<HTMLElement | null>(null)
 const photoInput = ref<HTMLInputElement | null>(null)
 const videoInput = ref<HTMLInputElement | null>(null)
+const stickerFileInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const showScrollBottom = ref(false)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
+
+// Curated Telegram-compatible featured stickers
+const featuredStickers = [
+  { id: '1', emoji: '👍', name: 'Thumbs Up', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f44d.png' },
+  { id: '2', emoji: '❤️', name: 'Heart', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/2764.png' },
+  { id: '3', emoji: '🔥', name: 'Fire', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f525.png' },
+  { id: '4', emoji: '🎉', name: 'Party', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f389.png' },
+  { id: '5', emoji: '🚀', name: 'Rocket', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f680.png' },
+  { id: '6', emoji: '😂', name: 'Joy', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f602.png' },
+  { id: '7', emoji: '🤖', name: 'Robot', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f916.png' },
+  { id: '8', emoji: '👏', name: 'Clap', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f44f.png' },
+  { id: '9', emoji: '💯', name: 'Hundred', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f4af.png' },
+  { id: '10', emoji: '✨', name: 'Sparkles', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/2728.png' },
+  { id: '11', emoji: '🙏', name: 'Pray', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f64f.png' },
+  { id: '12', emoji: '😎', name: 'Cool', url: 'https://images.emojiterra.com/google/noto-color-emoji/v15.1/512px/1f60e.png' }
+]
 
 // Sample emoji list for quick picker
 const commonEmojis = ['👍', '❤️', '🔥', '👏', '🎉', '🚀', '😂', '🙏', '💯', '✨', '⚡', '🤖', '👀', '💡', '✅', '⚠️']
@@ -207,9 +239,98 @@ const handleSendSticker = async (sticker: ChatMessage) => {
   try {
     await chatStore.sendSticker(groupId, sticker, replyTo)
     await scrollToBottom()
+    toast.success('Sticker sent')
   } catch (error: any) {
     replyingTo.value = replyTo
     toast.error(error.statusMessage || 'Failed to send sticker')
+  }
+}
+
+const handleSendFeaturedSticker = async (st: { url: string; emoji?: string }) => {
+  if (!activeGroupId.value) return
+  const groupId = activeGroupId.value
+  const replyTo = replyingTo.value
+  showStickerPicker.value = false
+  replyingTo.value = null
+  try {
+    await chatStore.sendSticker(groupId, { url: st.url, emoji: st.emoji }, replyTo)
+    await scrollToBottom()
+    toast.success('Sticker sent')
+  } catch (error: any) {
+    replyingTo.value = replyTo
+    toast.error(error.statusMessage || 'Failed to send sticker')
+  }
+}
+
+const handleSendCustomSticker = async () => {
+  const target = customStickerInput.value.trim()
+  if (!activeGroupId.value || !target) return
+  const groupId = activeGroupId.value
+  const replyTo = replyingTo.value
+  customStickerInput.value = ''
+  showStickerPicker.value = false
+  replyingTo.value = null
+  try {
+    await chatStore.sendSticker(groupId, { fileId: target }, replyTo)
+    await scrollToBottom()
+    toast.success('Sticker sent')
+  } catch (error: any) {
+    replyingTo.value = replyTo
+    toast.error(error.statusMessage || 'Failed to send custom sticker')
+  }
+}
+
+const handleStickerFileSelect = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !activeGroupId.value) return
+
+  const groupId = activeGroupId.value
+  const replyTo = replyingTo.value
+  showStickerPicker.value = false
+  try {
+    await chatStore.sendMedia(groupId, file, 'sticker', '', replyTo)
+    replyingTo.value = null
+    await scrollToBottom()
+    toast.success('Sticker uploaded & sent')
+  } catch (error: any) {
+    toast.error(error.statusMessage || 'Failed to send sticker')
+  }
+}
+
+const handleEnableWebhook = async () => {
+  isEnablingWebhook.value = true
+  try {
+    await webhookStore.setup()
+    toast.success('Real-time Telegram webhook connected successfully!')
+  } catch (err: any) {
+    toast.error(err.statusMessage || 'Failed to connect webhook')
+  } finally {
+    isEnablingWebhook.value = false
+  }
+}
+
+const handleAddGroup = async () => {
+  const chatId = newGroupChatId.value.trim()
+  if (!chatId) {
+    toast.error('Chat ID or username is required')
+    return
+  }
+  isAddingGroup.value = true
+  try {
+    const res = await groupsStore.addGroup(chatId, newGroupName.value.trim())
+    showAddGroupModal.value = false
+    newGroupChatId.value = ''
+    newGroupName.value = ''
+    toast.success('Group connected successfully!')
+    if (res.group?.id) {
+      loadChat(res.group.id)
+    }
+  } catch (err: any) {
+    toast.error(err.statusMessage || err.message || 'Failed to connect group')
+  } finally {
+    isAddingGroup.value = false
   }
 }
 
@@ -232,6 +353,7 @@ const handleMediaSelect = async (event: Event, mediaType: 'photo' | 'video') => 
     draft.value = ''
     replyingTo.value = null
     await scrollToBottom()
+    toast.success(`${mediaType === 'photo' ? 'Image' : 'Video'} sent`)
   } catch (error: any) {
     toast.error(error.statusMessage || `Failed to send ${mediaType}`)
   }
@@ -250,6 +372,7 @@ const mediaSrc = (fileId?: string) => (fileId ? `/api/media/${fileId}` : '')
 watch(() => chatStore.messages.length, scrollToBottom)
 
 onMounted(async () => {
+  webhookStore.fetchInfo()
   if (groupsStore.groups.length === 0) await groupsStore.fetchGroups()
   if (availableChats.value.length > 0 && !activeGroupId.value) {
     loadChat(availableChats.value[0].id)
@@ -270,7 +393,18 @@ onBeforeUnmount(() => {
         class="lg:col-span-3 border-r border-[var(--tf-border)] flex flex-col min-h-0 bg-[var(--tf-card)]"
         :class="activeGroupId ? 'hidden lg:flex' : 'flex'"
       >
-        <div class="p-3 border-b border-[var(--tf-border)]">
+        <div class="p-3 border-b border-[var(--tf-border)] space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-white tracking-wide uppercase">Conversations</span>
+            <button
+              @click="showAddGroupModal = true"
+              class="px-2 py-0.5 rounded text-[#2481cc] hover:text-[#50a7ea] hover:bg-white/5 transition flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+              title="Connect Telegram Group"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Connect</span>
+            </button>
+          </div>
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
             <input
@@ -283,7 +417,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Chat Items -->
-        <div class="flex-1 overflow-y-auto no-scrollbar divide-y divide-white/5">
+        <div v-if="chatList.length > 0" class="flex-1 overflow-y-auto no-scrollbar divide-y divide-white/5">
           <button
             v-for="g in chatList"
             :key="g.id"
@@ -308,11 +442,23 @@ onBeforeUnmount(() => {
             </div>
           </button>
         </div>
+        <div v-else class="p-6 text-center space-y-3 my-auto">
+          <div class="w-10 h-10 rounded-full bg-[#2481cc]/15 text-[#50a7ea] flex items-center justify-center mx-auto">
+            <MessageSquare class="w-5 h-5" />
+          </div>
+          <p class="text-xs text-white font-medium">No chats found</p>
+          <p class="text-[11px] text-slate-400">Connect your Telegram group to start chatting.</p>
+          <button
+            @click="showAddGroupModal = true"
+            class="tf-btn-primary text-xs py-1.5 px-3 w-full justify-center cursor-pointer"
+          >
+            Connect Telegram Group
+          </button>
+        </div>
       </aside>
 
       <!-- 2. MIDDLE PANE: Main Chat Canvas -->
       <section
-        class="flex flex-col min-h-0 bg-slate-950 relative"
         class="flex flex-col min-h-0 chat-canvas relative"
         :class="[
           activeGroupId ? 'flex' : 'hidden lg:flex',
@@ -320,7 +466,6 @@ onBeforeUnmount(() => {
         ]"
       >
         <!-- Top Chat Header -->
-        <header v-if="activeGroup" class="h-14 px-4 border-b border-[var(--tf-border)] flex items-center justify-between bg-[var(--tf-card)] shrink-0 z-10">
         <header v-if="activeGroup" class="h-14 px-4 border-b border-[var(--tf-border)] flex items-center justify-between bg-[var(--tf-card)] backdrop-blur-md shrink-0 z-10">
           <div class="flex items-center gap-3 min-w-0">
             <button @click="activeGroupId = null" class="lg:hidden p-1 text-slate-400 hover:text-white cursor-pointer">
@@ -340,7 +485,28 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-2">
+            <!-- Webhook status indicator -->
+            <div
+              v-if="webhookStore.info.configured"
+              class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+              title="Telegram Webhook is actively pushing updates to this Cloudflare Worker"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Realtime Active
+            </div>
+            <button
+              v-else
+              @click="handleEnableWebhook"
+              :disabled="isEnablingWebhook"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition cursor-pointer"
+              title="Click to activate real-time Telegram webhook"
+            >
+              <RefreshCw v-if="isEnablingWebhook" class="w-3 h-3 animate-spin" />
+              <Zap v-else class="w-3 h-3 text-amber-400" />
+              <span>Enable Realtime</span>
+            </button>
+
             <button
               @click="isSearchingInChat = !isSearchingInChat"
               class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
@@ -388,8 +554,27 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
+        <!-- Empty State when no group is active -->
+        <div v-if="!activeGroup" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 chat-canvas">
+          <div class="w-16 h-16 rounded-2xl bg-[#2481cc]/10 border border-[#2481cc]/20 flex items-center justify-center text-[#50a7ea]">
+            <MessageSquare class="w-8 h-8" />
+          </div>
+          <h3 class="text-sm font-bold text-white">Select a Conversation</h3>
+          <p class="text-xs text-slate-400 max-w-sm">
+            Choose a Telegram group from the left or connect your group to start chatting and viewing messages in real-time.
+          </p>
+          <button
+            @click="showAddGroupModal = true"
+            class="tf-btn-primary text-xs py-2 px-4 cursor-pointer"
+          >
+            <Plus class="w-4 h-4 mr-1.5" />
+            Connect Telegram Group
+          </button>
+        </div>
+
         <!-- Messages Area -->
         <div
+          v-else
           ref="messagesContainer"
           @scroll="handleScroll"
           class="flex-1 overflow-y-auto p-4 space-y-3 chat-canvas relative"
@@ -586,24 +771,105 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Sticker Drawer -->
-        <div v-if="showStickerPicker" class="p-3 bg-[var(--tf-card-elevated)] border-t border-[var(--tf-border)] space-y-2">
+        <div v-if="showStickerPicker" class="p-3 bg-[var(--tf-card-elevated)] border-t border-[var(--tf-border)] space-y-2.5">
           <div class="flex items-center justify-between">
-            <span class="text-[11px] font-semibold text-slate-300">Stickers</span>
-            <button @click="showStickerPicker = false" class="p-1 text-slate-400 hover:text-white">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-semibold text-slate-300 mr-1">Stickers</span>
+              <button
+                type="button"
+                @click="stickerTab = 'featured'"
+                class="px-2 py-0.5 text-[10px] rounded-md transition cursor-pointer"
+                :class="stickerTab === 'featured' ? 'bg-[#2481cc]/20 text-[#50a7ea] font-medium' : 'text-slate-400 hover:text-white'"
+              >
+                Featured
+              </button>
+              <button
+                type="button"
+                @click="stickerTab = 'recents'"
+                class="px-2 py-0.5 text-[10px] rounded-md transition cursor-pointer"
+                :class="stickerTab === 'recents' ? 'bg-[#2481cc]/20 text-[#50a7ea] font-medium' : 'text-slate-400 hover:text-white'"
+              >
+                Recents ({{ stickers.length }})
+              </button>
+              <button
+                type="button"
+                @click="stickerTab = 'custom'"
+                class="px-2 py-0.5 text-[10px] rounded-md transition cursor-pointer"
+                :class="stickerTab === 'custom' ? 'bg-[#2481cc]/20 text-[#50a7ea] font-medium' : 'text-slate-400 hover:text-white'"
+              >
+                Custom / Upload
+              </button>
+            </div>
+            <button @click="showStickerPicker = false" class="p-1 text-slate-400 hover:text-white cursor-pointer">
               <X class="w-3.5 h-3.5" />
             </button>
           </div>
-          <div v-if="stickers.length > 0" class="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto">
+
+          <!-- Featured Stickers Tab -->
+          <div v-if="stickerTab === 'featured'" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5 max-h-36 overflow-y-auto p-1">
             <button
-              v-for="s in stickers"
-              :key="s.mediaFileId"
-              @click="handleSendSticker(s)"
-              class="p-1.5 rounded hover:bg-white/10 flex items-center justify-center cursor-pointer"
+              v-for="st in featuredStickers"
+              :key="st.id"
+              type="button"
+              @click="handleSendFeaturedSticker(st)"
+              class="p-1.5 rounded-lg hover:bg-white/10 flex flex-col items-center justify-center cursor-pointer transition hover:scale-110"
+              :title="st.name"
             >
-              <img :src="mediaSrc(s.mediaFileId)" class="w-12 h-12 object-contain" />
+              <img :src="st.url" :alt="st.name" class="w-9 h-9 object-contain pointer-events-none" loading="lazy" />
+              <span class="text-[9px] text-slate-400 truncate mt-0.5">{{ st.emoji }}</span>
             </button>
           </div>
-          <p v-else class="text-[11px] text-slate-400 py-2">Stickers sent in Telegram group will appear here.</p>
+
+          <!-- Recents Tab -->
+          <div v-else-if="stickerTab === 'recents'">
+            <div v-if="stickers.length > 0" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5 max-h-36 overflow-y-auto p-1">
+              <button
+                v-for="s in stickers"
+                :key="s.mediaFileId"
+                type="button"
+                @click="handleSendSticker(s)"
+                class="p-1.5 rounded-lg hover:bg-white/10 flex items-center justify-center cursor-pointer transition hover:scale-110"
+              >
+                <img :src="mediaSrc(s.mediaFileId)" class="w-10 h-10 object-contain" />
+              </button>
+            </div>
+            <p v-else class="text-[11px] text-slate-400 py-3 text-center">
+              No stickers received in this chat yet. Choose from "Featured" or upload a custom sticker!
+            </p>
+          </div>
+
+          <!-- Custom / Upload Tab -->
+          <div v-else-if="stickerTab === 'custom'" class="space-y-2 py-1">
+            <div class="flex items-center gap-2">
+              <input
+                v-model="customStickerInput"
+                type="text"
+                placeholder="Paste Telegram sticker file_id or .webp image URL..."
+                class="tf-input flex-1 py-1 px-2.5 text-xs"
+                @keydown.enter.prevent="handleSendCustomSticker"
+              />
+              <button
+                type="button"
+                @click="handleSendCustomSticker"
+                :disabled="!customStickerInput.trim() || chatStore.isSending"
+                class="tf-btn-primary py-1 px-3 text-xs disabled:opacity-40 cursor-pointer"
+              >
+                Send
+              </button>
+              <button
+                type="button"
+                @click="stickerFileInput?.click()"
+                class="tf-btn-secondary py-1 px-3 text-xs flex items-center gap-1 shrink-0 cursor-pointer"
+                title="Upload .webp file from your device"
+              >
+                <Upload class="w-3.5 h-3.5" />
+                <span>Upload .webp</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">
+              Supports public .webp/.png image URLs, Telegram sticker file_ids, or direct .webp upload.
+            </p>
+          </div>
         </div>
 
         <!-- Emoji Picker Drawer -->
@@ -620,19 +886,29 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Composer Footer -->
-        <form @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
-        <form @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] backdrop-blur-md border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
+        <form v-if="activeGroup" @submit.prevent="handleSend" class="p-3 bg-[var(--tf-card)] backdrop-blur-md border-t border-[var(--tf-border)] flex items-end gap-2 shrink-0">
           <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handleMediaSelect($event, 'photo')" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleMediaSelect($event, 'video')" />
+          <input ref="stickerFileInput" type="file" accept=".webp,image/webp,image/png" class="hidden" @change="handleStickerFileSelect" />
 
-          <!-- Attach File / Media Button -->
+          <!-- Attach Image Button -->
           <button
             type="button"
             @click="photoInput?.click()"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
             title="Attach Image"
           >
-            <Paperclip class="w-4 h-4" />
+            <Image class="w-4 h-4" />
+          </button>
+
+          <!-- Attach Video Button -->
+          <button
+            type="button"
+            @click="videoInput?.click()"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
+            title="Attach Video"
+          >
+            <Video class="w-4 h-4" />
           </button>
 
           <!-- Emoji Picker Toggle -->
@@ -769,6 +1045,71 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </aside>
+    </div>
+
+    <!-- Add Group Modal -->
+    <div
+      v-if="showAddGroupModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showAddGroupModal = false"
+    >
+      <div class="bg-[var(--tf-card-elevated)] border border-[var(--tf-border)] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <Users class="w-4 h-4 text-[#50a7ea]" />
+            Connect Telegram Group
+          </h3>
+          <button @click="showAddGroupModal = false" class="p-1 text-slate-400 hover:text-white cursor-pointer">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-300">
+          Enter your Telegram group's Chat ID (e.g. <code class="text-[#50a7ea] bg-black/30 px-1 py-0.5 rounded">-1001234567890</code>) or public username (e.g. <code class="text-[#50a7ea] bg-black/30 px-1 py-0.5 rounded">@channelname</code>).
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">Chat ID or Username *</label>
+            <input
+              v-model="newGroupChatId"
+              type="text"
+              placeholder="-1001234567890 or @mygroup"
+              class="tf-input w-full px-3 py-2 text-xs"
+              @keydown.enter.prevent="handleAddGroup"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">Group Name (optional, auto-detected)</label>
+            <input
+              v-model="newGroupName"
+              type="text"
+              placeholder="e.g. My Telegram Community"
+              class="tf-input w-full px-3 py-2 text-xs"
+              @keydown.enter.prevent="handleAddGroup"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            @click="showAddGroupModal = false"
+            class="tf-btn-secondary py-1.5 px-3 text-xs cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            @click="handleAddGroup"
+            :disabled="!newGroupChatId.trim() || isAddingGroup"
+            class="tf-btn-primary py-1.5 px-4 text-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw v-if="isAddingGroup" class="w-3.5 h-3.5 animate-spin" />
+            <span>{{ isAddingGroup ? 'Connecting...' : 'Connect Group' }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

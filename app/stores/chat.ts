@@ -128,10 +128,11 @@ export const useChatStore = defineStore('chat', {
 
     async sendSticker(
       groupId: string,
-      sticker: Pick<ChatMessage, 'mediaFileId' | 'mediaEmoji' | 'stickerFormat'>,
+      sticker: { mediaFileId?: string; fileId?: string; url?: string; mediaEmoji?: string; emoji?: string; stickerFormat?: 'static' | 'animated' | 'video' },
       replyTo?: ReplyTarget | null
     ) {
-      if (!sticker.mediaFileId) throw new Error('Sticker file is unavailable')
+      const target = sticker.fileId || sticker.url || sticker.mediaFileId
+      if (!target) throw new Error('Sticker file is unavailable')
       this.isSending = true
       try {
         const data = await $fetch<{ success: boolean; message: ChatMessage }>(
@@ -139,8 +140,8 @@ export const useChatStore = defineStore('chat', {
           {
             method: 'POST',
             body: {
-              stickerFileId: sticker.mediaFileId,
-              stickerEmoji: sticker.mediaEmoji,
+              stickerFileId: target,
+              stickerEmoji: sticker.emoji || sticker.mediaEmoji,
               stickerFormat: sticker.stickerFormat,
               replyToMessageId: replyTo?.messageId,
               replyToName: replyTo?.name,
@@ -155,7 +156,7 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    async sendMedia(groupId: string, file: File, mediaType: 'photo' | 'video', message = '', replyTo?: ReplyTarget | null) {
+    async sendMedia(groupId: string, file: File, mediaType: 'photo' | 'video' | 'sticker', message = '', replyTo?: ReplyTarget | null) {
       this.isSending = true
       try {
         const form = new FormData()
